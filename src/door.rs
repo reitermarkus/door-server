@@ -1,66 +1,47 @@
 use std::time::Duration;
 use std::thread::sleep;
 
-use rppal::gpio::{InputPin, OutputPin};
+use rppal::gpio::{InputPin, OutputPin, Trigger, Level};
 
-pub struct GarageDoor {
-  s0: OutputPin, // S0 - Taster HALT (normally closed)
-  s2: OutputPin, // S2 - Taster AUF (normally open)
-  s4: OutputPin, // S4 - Taster ZU (normally open)
-  closed: InputPin,
+use crate::StatefulDoor;
+
+#[derive(Debug)]
+pub struct Door {
+  output: OutputPin,
+  input: InputPin,
 }
 
-impl GarageDoor {
-  pub fn new(mut s0:  OutputPin, mut s2: OutputPin, mut s4: OutputPin, closed: InputPin) -> GarageDoor {
-    s0.set_high();
-    s2.set_high();
-    s4.set_high();
+impl Door {
+  pub fn new(mut output: OutputPin, input: InputPin) -> Self {
+    output.set_high();
 
-    GarageDoor { s0, s2, s4, closed }
-  }
-
-  pub fn is_closed(&mut self) -> bool {
-    self.closed.is_low()
-  }
-
-  pub fn is_open(&mut self) -> bool {
-    !self.is_closed()
+    Self { output, input }
   }
 
   pub fn open(&mut self) {
-    if self.is_open() {
-      self.stop();
-      sleep(Duration::from_millis(500));
-    }
+    self.output.set_low();
+    sleep(Duration::from_millis(250));
+    self.output.set_high();
+  }
+}
 
-    self.s0.set_high();
-    self.s4.set_high();
+impl StatefulDoor for Door {
+  fn on_change(&mut self, mut callback: impl FnMut(bool) + Send + 'static) {
+    self.input.set_async_interrupt(Trigger::Both, move |level| {
+      let closed = match level {
+        Level::Low => true,
+        Level::High => false,
+      };
 
-    self.s2.set_low();
-    sleep(Duration::from_millis(500));
-    self.s2.set_high();
+      callback(closed);
+    }).unwrap()
   }
 
-  pub fn stop(&mut self) {
-    self.s2.set_high();
-    self.s4.set_high();
-
-    self.s0.set_low();
-    sleep(Duration::from_millis(500));
-    self.s0.set_high();
+  fn is_closed(&self) -> bool {
+    self.input.is_low()
   }
 
-  pub fn close(&mut self) {
-    if self.is_open() {
-      self.stop();
-      sleep(Duration::from_millis(500));
-    }
-
-    self.s0.set_high();
-    self.s2.set_high();
-
-    self.s4.set_low();
-    sleep(Duration::from_millis(500));
-    self.s4.set_high();
+  fn is_open(&self) -> bool {
+    !self.is_closed()
   }
 }
