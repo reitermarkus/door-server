@@ -2,16 +2,13 @@ use std::any::Any;
 use std::sync::{Arc, RwLock, Weak};
 use std::thread;
 
-use serde_json::json;
 use uuid::Uuid;
 use webthing::{Action, BaseAction, Thing};
 
 use door_server::{Door, GarageDoor};
 
-use crate::set_property;
-
 macro_rules! action {
-  ($ty:ident, $action_name:expr, $result_value:expr, $method:expr) => {
+  ($ty:ident, $action_name:expr, $method:expr) => {
     pub struct $ty {
       action: BaseAction,
       door: Arc<RwLock<Box<dyn Any + Send + Sync>>>,
@@ -95,8 +92,6 @@ macro_rules! action {
             $method(&mut *door);
 
             let mut thing = thing.write().unwrap();
-            set_property(&mut *thing, "lock", json!($result_value));
-
             thing.finish_action(action_name, id);
           });
         }
@@ -112,7 +107,7 @@ macro_rules! action {
   }
 }
 
-action!(UnlockAction, "unlock", "unlocked", |door: &mut Box<dyn Any + Send + Sync>| {
+action!(UnlockAction, "unlock", |door: &mut Box<dyn Any + Send + Sync>| {
   if let Some(ref mut door) = door.downcast_mut::<Door>() {
     door.open();
   } else if let Some(ref mut door) = door.downcast_mut::<GarageDoor>() {
@@ -122,7 +117,7 @@ action!(UnlockAction, "unlock", "unlocked", |door: &mut Box<dyn Any + Send + Syn
   }
 });
 
-action!(LockAction, "lock", " locked", |door: &mut Box<dyn Any + Send + Sync>| {
+action!(LockAction, "lock", |door: &mut Box<dyn Any + Send + Sync>| {
   if let Some(ref mut door) = door.downcast_mut::<GarageDoor>() {
     door.close();
   } else {
