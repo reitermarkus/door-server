@@ -9,7 +9,7 @@ env_logger = "0.7"
 log = "0.4"
 rppal = "0.12"
 serde_json = "1"
-webthing = "0.14.0"
+webthing = { version = "0.14.0", git = "https://github.com/reitermarkus/webthing-rust", branch = "if-let-match" }
 actix-rt = "1.1"
 uuid = "0.8.2"
 

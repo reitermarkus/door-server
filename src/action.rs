@@ -80,7 +80,11 @@ macro_rules! action {
         }
 
         fn perform_action(&mut self) {
-          let thing = self.get_thing().unwrap().clone();
+          let thing = if let Some(thing) = self.get_thing() {
+            thing.clone()
+          } else {
+            return
+          };
           let action_name = self.get_name();
           let id = self.get_id();
           let door = self.door.clone();

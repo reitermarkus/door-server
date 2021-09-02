@@ -28,7 +28,7 @@ impl ActionGenerator for Generator {
       _input: Option<&serde_json::Value>,
   ) -> Option<Box<dyn Action>> {
     let id = {
-      let thing = thing.upgrade().unwrap().clone();
+      let thing = thing.upgrade()?;
       let thing = thing.read().unwrap();
       thing.get_id()
     };
