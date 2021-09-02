@@ -52,8 +52,12 @@ fn door_state(locked: Option<bool>) -> serde_json::Value {
 
 fn set_property<T: DerefMut<Target = Box<dyn Thing + 'static>>>(mut thing: T, property: &str, value: serde_json::Value) {
   let locked_property = thing.find_property(&property.into()).unwrap();
-  locked_property.set_cached_value(value.clone()).unwrap();
-  thing.property_notify(property.into(), value);
+
+  let previous_value = locked_property.get_value();
+  if previous_value != value {
+    locked_property.set_cached_value(value.clone()).unwrap();
+    thing.property_notify(property.into(), value);
+  }
 }
 
 fn make_door_thing(mut door: impl StatefulDoor, id: &str, name: &str, supports_locking: bool) -> Arc<RwLock<Box<dyn Thing + 'static>>> {
