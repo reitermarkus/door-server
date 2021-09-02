@@ -25,7 +25,6 @@ impl GarageDoor {
   pub fn open(&mut self) {
     if self.is_open() {
       self.stop();
-      sleep(Duration::from_millis(500));
     }
 
     self.s0.set_high();
@@ -43,12 +42,12 @@ impl GarageDoor {
     self.s0.set_low();
     sleep(Duration::from_millis(250));
     self.s0.set_high();
+    sleep(Duration::from_millis(500));
   }
 
   pub fn close(&mut self) {
     if self.is_open() {
       self.stop();
-      sleep(Duration::from_millis(500));
     }
 
     self.s0.set_high();
