@@ -1,9 +1,9 @@
 use std::time::Duration;
 use std::thread::sleep;
 
-use rppal::gpio::{InputPin, OutputPin, Trigger, Level};
+use rppal::gpio::{InputPin, OutputPin, Trigger};
 
-use crate::StatefulDoor;
+use super::*;
 
 #[derive(Debug)]
 pub struct Door {
@@ -26,15 +26,11 @@ impl Door {
 }
 
 impl StatefulDoor for Door {
-  fn on_change(&mut self, mut callback: impl FnMut(bool) + Send + 'static) {
-    self.input.set_async_interrupt(Trigger::Both, move |level| {
-      let closed = match level {
-        Level::Low => true,
-        Level::High => false,
-      };
-
-      callback(closed);
-    }).unwrap()
+  fn on_change(&mut self, callback: impl FnMut(bool) + Send + 'static) {
+    self.input.set_async_interrupt(
+      Trigger::Both,
+      on_change_debounce(callback)
+    ).unwrap()
   }
 
   fn is_closed(&self) -> bool {
