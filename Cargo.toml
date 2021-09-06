@@ -13,6 +13,9 @@ webthing = { version = "0.14.0", git = "https://github.com/reitermarkus/webthing
 actix-rt = "1.1"
 uuid = "0.8.2"
 embedded-hal = "1.0.0-alpha.4"
+embedded-hal-0 = { version = "0.2.6", package = "embedded-hal" }
+ws2812-spi = "0.4.0"
+smart-leds = "0.3.0"
 
 [lib]
 name = "door_server"

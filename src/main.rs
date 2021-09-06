@@ -2,6 +2,7 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::{Arc, RwLock, Weak};
+use std::thread;
 
 use rppal::gpio::Gpio;
 use serde_json::json;
@@ -15,6 +16,8 @@ use door_server::{Door, GarageDoor, WaveshareRelay, StatefulDoor};
 
 mod action;
 use action::{LockAction, UnlockAction};
+
+mod led;
 
 struct Generator {
   doors: HashMap<String, Arc<RwLock<Box<dyn Any + Send + Sync>>>>,
@@ -163,6 +166,8 @@ async fn main() {
   let generator = Generator {
     doors,
   };
+
+  thread::spawn(|| led::test());
 
   let mut server = WebThingServer::new(
     ThingsType::Multiple(things, "DoorServer".to_owned()),
