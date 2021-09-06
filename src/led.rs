@@ -1,9 +1,8 @@
 use embedded_hal_0::blocking::delay::DelayMs;
 use rppal::spi::{Bus, Mode as SpiMode, Spi, SlaveSelect};
-use rppal::hal::Delay;
 use smart_leds::{SmartLedsWrite, RGB8};
 
-const fn encode_byte(mut data: u8) -> [u8; 4] {
+const fn encode_byte(data: u8) -> [u8; 4] {
   const fn encode_bit(bit: u8) -> u8 {
     0b1000 + bit * 0b0110
   }
@@ -21,9 +20,8 @@ const fn encode_byte(mut data: u8) -> [u8; 4] {
   ]
 }
 
-fn encode_colors(data: &[RGB8]) -> Vec<u8> {
-  let mut buffer = vec![];
-
+fn encode_colors(buffer: &mut Vec<u8>, data: &[RGB8]) {
+  buffer.clear();
   buffer.push(0);
 
   for pixel in data {
@@ -35,70 +33,78 @@ fn encode_colors(data: &[RGB8]) -> Vec<u8> {
   for _ in 0..20 {
     buffer.push(0);
   }
-
-  buffer
 }
 
-pub fn test() {
-  log::info!("Starting LED test thread.");
+pub struct RgbRing {
+  spi: Spi,
+  colors: [RGB8; 12],
+  buffer: Vec<u8>,
+}
 
-  let mut delay = Delay;
+impl RgbRing {
+  pub fn new() -> Self {
+    // Raspberry Pi `/boot/config.txt` must be set to use a core frequency of 250 MHz.
+    let spi_freq = 800_000 * 3;
 
-  let mut data = [RGB8::default(); 12];
-
-  let empty = [RGB8::default(); 12];
-
-  // Raspberry Pi `/boot/config.txt` must be set to use a core frequency of 250 MHz.
-  let spi_freq = 800_000 * 3;
-
-  let mut spi = Spi::new(
-    Bus::Spi0,
-    SlaveSelect::Ss0,
-    spi_freq,
-    SpiMode::Mode0,
-  ).unwrap();
-
-  // let mut output_buffer = [0; 20 + (12 * 12)];
-  // let mut ws = Ws2812::new(spi, &mut output_buffer);
-
-  let mut index = 0;
-  loop {
-
-    for i in 0..(data.len() / 3) {
-      data[i * 3 + 0] = RGB8 {
-          r: 0,
-          g: 0,
-          b: 0x10,
-      };
-      data[i * 3 + 1] = RGB8 {
-          r: 0,
-          g: 0x10,
-          b: 0,
-      };
-      data[i * 3 + 2] = RGB8 {
-          r: 0x10,
-          g: 0,
-          b: 0,
-      };
+    Self {
+      spi: Spi::new(
+        Bus::Spi0,
+        SlaveSelect::Ss0,
+        spi_freq,
+        SpiMode::Mode0,
+      ).unwrap(),
+      colors: Default::default(),
+      buffer: Vec::new(),
     }
+  }
 
-    data[index].r = 0x10;
-    data[index].g = 0x10;
-    data[index].b = 0x00;
-    index = (index + 1) % data.len();
+  pub fn set_top_right(&mut self, color: RGB8) {
+    self.colors[0] = color;
+    self.colors[1] = color;
+    self.colors[2] = color;
+  }
 
+  pub fn set_bottom_right(&mut self, color: RGB8) {
+    self.colors[3] = color;
+    self.colors[4] = color;
+    self.colors[5] = color;
+  }
 
-    let pixel_buf = encode_colors(&data);
+  pub fn set_bottom_left(&mut self, color: RGB8) {
+    self.colors[6] = color;
+    self.colors[7] = color;
+    self.colors[8] = color;
+  }
 
-    spi.write(&pixel_buf).unwrap();
-    // ws.write(data.iter().cloned()).unwrap();
-    delay.delay_ms(250 as u16);
+  pub fn set_top_left(&mut self, color: RGB8) {
+    self.colors[9] = color;
+    self.colors[10] = color;
+    self.colors[11] = color;
+  }
 
-    let pixel_buf = encode_colors(&empty);
+  pub fn render(&mut self, main_door_closed: bool, cellar_door_closed: bool, garage_door_closed: bool) {
+    self.set_top_left(closed_to_color(main_door_closed));
+    self.set_top_right(closed_to_color(garage_door_closed));
+    self.set_bottom_right(closed_to_color(cellar_door_closed));
 
-    spi.write(&pixel_buf).unwrap();
-    // ws.write(empty.iter().cloned()).unwrap();
-
-    delay.delay_ms(250 as u16);
+    encode_colors(&mut self.buffer, &self.colors);
+    self.spi.write(&self.buffer).unwrap();
   }
 }
+
+fn closed_to_color(closed: bool) -> RGB8 {
+  if closed {
+    RGB8 {
+      r: 0x10,
+      g: 0x00,
+      b: 0x00,
+    }
+  } else {
+    RGB8 {
+      r: 0x00,
+      g: 0x10,
+      b: 0x00,
+    }
+  }
+}
+

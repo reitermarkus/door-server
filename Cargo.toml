@@ -26,4 +26,4 @@ name = "door-server"
 path = "src/main.rs"
 
 [patch.crates-io]
-rppal = { git = "https://github.com/reitermarkus/rppal", branch = "hal-unproven" }
+rppal = { git = "https://github.com/golemparts/rppal" }

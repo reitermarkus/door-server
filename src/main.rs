@@ -18,6 +18,7 @@ mod action;
 use action::{LockAction, UnlockAction};
 
 mod led;
+use led::RgbRing;
 
 struct Generator {
   doors: HashMap<String, Arc<RwLock<Box<dyn Any + Send + Sync>>>>,
@@ -167,7 +168,22 @@ async fn main() {
     doors,
   };
 
-  thread::spawn(|| led::test());
+  thread::spawn(move || {
+    let mut ring = RgbRing::new();
+
+    loop {
+      let main_door_closed = main_door.read().unwrap()
+        .downcast_ref::<Door>().unwrap().is_closed();
+      let cellar_door_closed = cellar_door.read().unwrap()
+        .downcast_ref::<Door>().unwrap().is_closed();
+      let garage_door_closed = garage_door.read().unwrap()
+        .downcast_ref::<GarageDoor>().unwrap().is_closed();
+
+      ring.render(main_door_closed, cellar_door_closed, garage_door_closed);
+      thread::yield_now();
+      }
+    }
+  );
 
   let mut server = WebThingServer::new(
     ThingsType::Multiple(things, "DoorServer".to_owned()),
