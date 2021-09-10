@@ -2,7 +2,6 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, RwLock, Weak};
-use std::thread;
 
 use embedded_hal::digital::OutputPin;
 use rppal::gpio::{Gpio, Trigger};
@@ -11,6 +10,7 @@ use webthing::{
   Action, BaseProperty, BaseThing, Thing, ThingsType, WebThingServer,
   server::ActionGenerator,
 };
+use smart_leds::RGB8;
 
 use door_server::{on_change_debounce, Door, GarageDoor, WaveshareRelay, StatefulDoor};
 
@@ -143,7 +143,9 @@ async fn main() {
     gpio.get(25).unwrap().into_output()
   )));
 
-  let ring = Arc::new(Mutex::new(RgbRing::new()));
+  let mut ring = RgbRing::new();
+  ring.set_bottom_left(RGB8 { r: 0x01, g: 0x01, b: 0x01 });
+  let ring = Arc::new(Mutex::new(ring));
 
   let mut garage_door_button = gpio.get(4).unwrap().into_input_pullup();
 
@@ -219,7 +221,7 @@ async fn main() {
     } else {
       garage_door.open()
     }
-  }));
+  })).unwrap();
 
   doors.insert(garage_door_thing.read().unwrap().get_id(), garage_door.clone());
   things.push(garage_door_thing.clone());

@@ -1,5 +1,5 @@
 use rppal::spi::{Bus, Mode as SpiMode, Spi, SlaveSelect};
-use smart_leds::{SmartLedsWrite, RGB8};
+use smart_leds::RGB8;
 
 const fn encode_byte(data: u8) -> [u8; 4] {
   const fn encode_bit(bit: u8) -> u8 {
