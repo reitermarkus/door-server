@@ -51,6 +51,13 @@ task :setup_i2c do
   ssh 'sudo', 'tee', '/lib/udev/rules.d/99-i2c.rules', in: r
 end
 
+desc 'set up SPI on Raspberry Pi'
+task :setup_spi do
+  ssh <<~SH
+    sudo sed -i -E 's/^#?(dtparam=spi)=.*/\1=on/' /boot/config.txt
+  SH
+end
+
 desc 'set up watchdog on Raspberry Pi'
 task :setup_watchdog do
   ssh <<~SH
@@ -83,7 +90,7 @@ task :setup_watchdog do
   ssh 'sudo', 'systemctl', 'enable', 'watchdog'
 end
 
-task :setup => [:setup_timezone, :setup_hostname, :setup_i2c, :setup_watchdog, :setup_mjpeg_streamer, :setup_shairport, :setup_soundcard]
+task :setup => [:setup_timezone, :setup_hostname, :setup_i2c, :setup_spi, :setup_watchdog]
 
 task :install => :build do
   sh 'rsync', '-z', '--rsync-path', 'sudo rsync', "target/#{TARGET}/release/door-server", "#{HOST}:/usr/local/bin/door-server"

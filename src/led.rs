@@ -1,4 +1,3 @@
-use embedded_hal_0::blocking::delay::DelayMs;
 use rppal::spi::{Bus, Mode as SpiMode, Spi, SlaveSelect};
 use smart_leds::{SmartLedsWrite, RGB8};
 
@@ -82,27 +81,23 @@ impl RgbRing {
     self.colors[11] = color;
   }
 
-  pub fn render(&mut self, main_door_closed: bool, cellar_door_closed: bool, garage_door_closed: bool) {
-    self.set_top_left(closed_to_color(main_door_closed));
-    self.set_top_right(closed_to_color(garage_door_closed));
-    self.set_bottom_right(closed_to_color(cellar_door_closed));
-
+  pub fn render(&mut self) {
     encode_colors(&mut self.buffer, &self.colors);
     self.spi.write(&self.buffer).unwrap();
   }
 }
 
-fn closed_to_color(closed: bool) -> RGB8 {
+pub fn closed_to_color(closed: bool) -> RGB8 {
   if closed {
     RGB8 {
-      r: 0x10,
-      g: 0x00,
+      r: 0x00,
+      g: 0x0d,
       b: 0x00,
     }
   } else {
     RGB8 {
-      r: 0x00,
-      g: 0x10,
+      r: 0x11,
+      g: 0x00,
       b: 0x00,
     }
   }

@@ -35,7 +35,7 @@ impl<T> StatefulDoor for &mut T where T: StatefulDoor {
   }
 }
 
-fn on_change_debounce(callback: impl FnMut(bool) + Send + 'static) -> impl FnMut(Level) + Send + 'static {
+pub fn on_change_debounce(callback: impl FnMut(bool) + Send + 'static) -> impl FnMut(Level) + Send + 'static {
   let last_value = Arc::new(AtomicUsize::new(0));
   let callback = Arc::new(Mutex::new(callback));
 
