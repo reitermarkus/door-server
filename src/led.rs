@@ -91,12 +91,12 @@ pub fn closed_to_color(closed: bool) -> RGB8 {
   if closed {
     RGB8 {
       r: 0x00,
-      g: 0x0d,
-      b: 0x00,
+      g: 0x0f,
+      b: 0x01,
     }
   } else {
     RGB8 {
-      r: 0x11,
+      r: 0x14,
       g: 0x00,
       b: 0x00,
     }
