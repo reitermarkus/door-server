@@ -1,7 +1,7 @@
 require 'securerandom'
 require 'shellwords'
 
-TARGET = ENV['TARGET'] || 'arm-unknown-linux-gnueabi'
+TARGET = ENV['TARGET'] || 'arm-unknown-linux-gnueabihf'
 
 RPI = ENV['RPI'] || 'door-server.local'
 HOST = "pi@#{RPI}"
