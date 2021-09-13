@@ -3,7 +3,6 @@ use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, RwLock, Weak};
 
-use embedded_hal::digital::OutputPin;
 use rppal::gpio::{Gpio, Trigger};
 use serde_json::json;
 use webthing::{
@@ -195,13 +194,13 @@ async fn main() {
     let mut led = led_clone.lock().unwrap();
 
     if closed {
-      led.0.try_set_low().unwrap();
-      led.1.try_set_high().unwrap();
+      led.0.set_low();
+      led.1.set_high();
     } else {
-      led.0.try_set_high().unwrap();
-      led.1.try_set_low().unwrap();
+      led.0.set_high();
+      led.1.set_low();
     }
-    led.2.try_set_low().unwrap();
+    led.2.set_low();
   });
   let garage_door: Arc<RwLock<Box<dyn Any + Send + Sync>>> = Arc::new(RwLock::new(Box::new(garage_door)));
 
@@ -209,9 +208,9 @@ async fn main() {
   let led_clone = led.clone();
   garage_door_button.set_async_interrupt(Trigger::RisingEdge, on_change_debounce(move |_| {
     let mut led = led_clone.lock().unwrap();
-    led.0.try_set_high().unwrap();
-    led.1.try_set_high().unwrap();
-    led.2.try_set_low().unwrap();
+    led.0.set_high();
+    led.1.set_high();
+    led.2.set_low();
 
     let mut garage_door = garage_door_clone.write().unwrap();
     let garage_door = garage_door.downcast_mut::<GarageDoor>().unwrap();
