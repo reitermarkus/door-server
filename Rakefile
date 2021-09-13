@@ -53,9 +53,7 @@ end
 
 desc 'set up SPI on Raspberry Pi'
 task :setup_spi do
-  ssh <<~SH
-    sudo sed -i -E 's/^#?(dtparam=spi)=.*/\1=on/' /boot/config.txt
-  SH
+  ssh 'sudo', 'raspi-config', 'nonint', 'do_spi', '0'
 end
 
 desc 'set up watchdog on Raspberry Pi'
