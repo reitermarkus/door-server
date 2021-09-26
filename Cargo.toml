@@ -9,7 +9,7 @@ env_logger = "0.7"
 log = "0.4"
 rppal = { version = "0.12", features = ["hal"] }
 serde_json = "1"
-webthing = { version = "0.14.0", git = "https://github.com/reitermarkus/webthing-rust", branch = "if-let-match" }
+webthing = "0.14.0"
 actix-rt = "1.1"
 uuid = "0.8.2"
 embedded-hal = "=1.0.0-alpha.5"
@@ -26,5 +26,7 @@ name = "door-server"
 path = "src/main.rs"
 
 [patch.crates-io]
-rppal = { git = "https://github.com/reitermarkus/rppal", branch = "hal" }
+rppal = { git = "https://github.com/golemparts/rppal" }
 # rppal = { path = "./rppal" }
+webthing = { git = "https://github.com/reitermarkus/webthing-rust", branch = "if-let-match" }
+# webthing = { path = "./webthing-rust" }
