@@ -117,6 +117,7 @@ task :deploy => :install  do
     w.close
 
     ssh 'sudo', 'tee', '/etc/systemd/system/door-server.service', in: r
+    ssh 'sudo', 'systemctl', 'enable', 'systemd-networkd-wait-online.service'
     ssh 'sudo', 'systemctl', 'enable', 'door-server'
     ssh 'sudo', 'systemctl', 'restart', 'door-server'
   end
