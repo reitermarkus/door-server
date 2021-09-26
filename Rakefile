@@ -100,10 +100,9 @@ task :deploy => :install  do
 
     w.puts <<~CFG
       [Unit]
-      # StartLimitAction=reboot
-      StartLimitIntervalSec=60
-      StartLimitBurst=10
       Description=door-server
+      After=network-online.target
+      Wants=network-online.target
 
       [Service]
       Type=simple
