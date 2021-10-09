@@ -2,11 +2,14 @@ use std::any::Any;
 use std::collections::HashMap;
 use std::ops::DerefMut;
 use std::sync::{Arc, Mutex, RwLock, Weak};
+use std::str;
+use std::net::UdpSocket;
+use std::thread;
 
 use rppal::gpio::{Gpio, Trigger};
 use serde_json::json;
 use webthing::{
-  Action, BaseProperty, BaseThing, Thing, ThingsType, WebThingServer,
+  Action, BaseProperty, BaseEvent, BaseThing, Thing, ThingsType, WebThingServer,
   server::ActionGenerator,
 };
 use smart_leds::RGB8;
@@ -94,6 +97,15 @@ fn make_door_thing(mut door: impl StatefulDoor, id: &str, name: &str, supports_l
   door_thing.add_available_action(
     "unlock".into(),
     door_unlock.as_object().unwrap().to_owned(),
+  );
+
+  door_thing.add_available_event(
+    "finger_scanned".to_owned(),
+    json!({
+      "description": "A finger has been scanned.",
+      "type": "object",
+      "unit": "",
+    }).as_object().unwrap().to_owned(),
   );
 
   if supports_locking {
@@ -228,6 +240,47 @@ async fn main() {
   let generator = Generator {
     doors,
   };
+
+  let socket = UdpSocket::bind("0.0.0.0:56000").unwrap();
+  thread::spawn(move || {
+    let mut buf = [0; 64];
+
+    loop {
+      match socket.recv_from(&mut buf) {
+        Ok((size, _)) => {
+          match str::from_utf8  (&buf[..size]) {
+            Ok(s) => match s.parse::<ekey::multi::Multi>() {
+              Ok(packet) => {
+                dbg!(&packet);
+
+                let value = serde_json::value::to_value(&packet).unwrap();
+                let event = Box::new(BaseEvent::new("finger_scanned".to_owned(), Some(value)));
+
+                match packet.finger_scanner_name() {
+                  "HT" => {
+                    let main_door = &mut *main_door_thing.write().unwrap();
+                    main_door.add_event(event);
+                  },
+                  "KT" => {
+                    let cellar_door = &mut *cellar_door_thing.write().unwrap();
+                    cellar_door.add_event(event);
+                  },
+                  "GT" => {
+                    let garage_door = &mut *garage_door_thing.write().unwrap();
+                    garage_door.add_event(event);
+                  },
+                  _ => (),
+                }
+              },
+              Err(_) => log::error!("Invalid EKEY message format."),
+            },
+            Err(_) => log::error!("Invalid EKEY request."),
+          }
+        }
+        Err(err) => log::error!("{}", err),
+      }
+    }
+  });
 
   let mut server = WebThingServer::new(
     ThingsType::Multiple(things, "DoorServer".to_owned()),

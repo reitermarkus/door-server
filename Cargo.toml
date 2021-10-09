@@ -16,6 +16,7 @@ embedded-hal = "=1.0.0-alpha.5"
 embedded-hal-0 = { version = "0.2.6", package = "embedded-hal" }
 ws2812-spi = "0.4.0"
 smart-leds = "0.3.0"
+ekey = "0.2.1"
 
 [lib]
 name = "door_server"
@@ -28,5 +29,5 @@ path = "src/main.rs"
 [patch.crates-io]
 rppal = { git = "https://github.com/golemparts/rppal" }
 # rppal = { path = "./rppal" }
-webthing = { git = "https://github.com/reitermarkus/webthing-rust", branch = "if-let-match" }
+webthing = { git = "https://github.com/WebThingsIO/webthing-rust", branch = "master" }
 # webthing = { path = "./webthing-rust" }
