@@ -7,7 +7,7 @@ edition = "2018"
 [dependencies]
 env_logger = "0.7"
 log = "0.4"
-rppal = { version = "0.12", features = ["hal"] }
+rppal = { version = "0.13", features = ["hal"] }
 serde_json = "1"
 webthing = "0.14.0"
 actix-rt = "1.1"
@@ -27,7 +27,7 @@ name = "door-server"
 path = "src/main.rs"
 
 [patch.crates-io]
-rppal = { git = "https://github.com/golemparts/rppal" }
-# rppal = { path = "./rppal" }
+# rppal = { git = "https://github.com/golemparts/rppal" }
+rppal = { path = "./rppal" }
 webthing = { git = "https://github.com/WebThingsIO/webthing-rust", branch = "master" }
 # webthing = { path = "./webthing-rust" }

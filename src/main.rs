@@ -218,7 +218,7 @@ async fn main() {
 
   let garage_door_clone = garage_door.clone();
   let led_clone = led.clone();
-  garage_door_button.set_async_interrupt(Trigger::RisingEdge, on_change_debounce(move |_| {
+  garage_door_button.set_async_interrupt(Trigger::FallingEdge, on_change_debounce(move |_| {
     let mut led = led_clone.lock().unwrap();
     led.0.set_high();
     led.1.set_high();
