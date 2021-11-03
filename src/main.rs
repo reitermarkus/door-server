@@ -100,7 +100,7 @@ fn make_door_thing(mut door: impl StatefulDoor, id: &str, name: &str, supports_l
   );
 
   door_thing.add_available_event(
-    "finger_scanned".to_owned(),
+    "finger_scan".to_owned(),
     json!({
       "description": "A finger has been scanned.",
       "type": "object",
@@ -158,6 +158,7 @@ async fn main() {
   ring.set_bottom_left(RGB8 { r: 0x01, g: 0x01, b: 0x01 });
   let ring = Arc::new(Mutex::new(ring));
 
+  let mut door_bell_button = gpio.get(1).unwrap().into_input_pullup();
   let mut garage_door_button = gpio.get(4).unwrap().into_input_pullup();
 
   let main_door_input = gpio.get(17).unwrap().into_input_pullup();
@@ -168,10 +169,29 @@ async fn main() {
     ring.set_top_left(closed_to_color(closed));
     ring.render();
   });
+  main_door_thing.write().unwrap().add_available_event(
+    "bell".to_owned(),
+    json!({
+      "description": "The door bell has been rung.",
+      "type": "object",
+      "unit": "",
+    }).as_object().unwrap().to_owned(),
+  );
+
   let main_door: Arc<RwLock<Box<dyn Any + Send + Sync>>> = Arc::new(RwLock::new(Box::new(main_door)));
 
   doors.insert(main_door_thing.read().unwrap().get_id(), main_door.clone());
   things.push(main_door_thing.clone());
+
+  let main_door_thing_clone = main_door_thing.clone();
+  door_bell_button.set_async_interrupt(Trigger::FallingEdge, on_change_debounce(move |_| {
+    let main_door_thing = &main_door_thing_clone;
+
+    log::info!("Door bell button pressed.");
+
+    let event = Box::new(BaseEvent::new("bell".to_owned(), Some(json!(true))));
+    main_door_thing.write().unwrap().add_event(event);
+  })).unwrap();
 
   let cellar_door_input = gpio.get(27).unwrap().into_input_pullup();
   let mut cellar_door = Door::new(relay.ch2, cellar_door_input);
@@ -256,7 +276,7 @@ async fn main() {
                 dbg!(&packet);
 
                 let value = serde_json::value::to_value(&packet).unwrap();
-                let event = Box::new(BaseEvent::new("finger_scanned".to_owned(), Some(value)));
+                let event = Box::new(BaseEvent::new("finger_scan".to_owned(), Some(value)));
 
                 match packet.finger_scanner_name() {
                   "HT" => {
