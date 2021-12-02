@@ -27,7 +27,5 @@ name = "door-server"
 path = "src/main.rs"
 
 [patch.crates-io]
-# rppal = { git = "https://github.com/golemparts/rppal" }
-rppal = { path = "./rppal" }
 webthing = { git = "https://github.com/WebThingsIO/webthing-rust", branch = "master" }
 # webthing = { path = "./webthing-rust" }
