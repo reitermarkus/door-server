@@ -1,0 +1,6 @@
+[build]
+target = "arm-unknown-linux-gnueabihf"
+
+[target.arm-unknown-linux-gnueabihf]
+linker = "arm-unknown-linux-gnueabihf-gcc"
+runner = "./run.sh"

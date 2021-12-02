@@ -1,0 +1,65 @@
+- name: Set up Raspberry Pi
+  hosts: raspberry_pi
+  become: yes
+  tasks:
+    - name: Install requirements
+      local_action: command ansible-galaxy install -r requirements.yml
+      become: no
+      tags:
+        - setup
+    - name: Setup
+      include_role:
+        name: reitermarkus.raspberry_pi.setup
+      vars:
+        timezone: Europe/Vienna
+        spi: on
+        watchdog: on
+      tags:
+        - setup
+    - name: Build program
+      local_action: command cargo install --path . --root target
+      become: no
+      tags:
+        - build
+        - deploy
+    - name: Install program
+      copy:
+        src: target/bin/door-server
+        dest: /usr/local/bin/door-server
+        mode: 0755
+      tags:
+        - deploy
+    - name: Enable systemd-networkd-wait-online service
+      systemd:
+        name: systemd-networkd-wait-online
+        enabled: yes
+      tags:
+        - deploy
+    - name: Install service
+      copy:
+        content: |
+          [Unit]
+          Description=door-server
+          After=network-online.target
+          Wants=network-online.target
+
+          [Service]
+          Type=simple
+          Environment=RUST_LOG=info
+          Environment=PORT=8888
+          ExecStart=/usr/local/bin/door-server
+          Restart=always
+          RestartSec=1
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: /etc/systemd/system/door-server.service
+      tags:
+        - deploy
+    - name: Enable service
+      systemd:
+        name: door-server
+        enabled: yes
+        state: restarted
+      tags:
+        - deploy

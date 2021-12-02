@@ -1,0 +1,9 @@
+all:
+  hosts:
+    door-server:
+      ansible_user: pi
+      ansible_host: door-server.local
+  children:
+    raspberry_pi:
+      hosts:
+        door-server:
