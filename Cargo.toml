@@ -6,7 +6,7 @@ edition = "2018"
 publish = false
 
 [dependencies]
-env_logger = "0.7"
+env_logger = "0.9"
 log = "0.4"
 rppal = { version = "0.13", features = ["hal"] }
 serde_json = "1"
