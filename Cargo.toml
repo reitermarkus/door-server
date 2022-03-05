@@ -30,3 +30,4 @@ path = "src/main.rs"
 [patch.crates-io]
 webthing = { git = "https://github.com/WebThingsIO/webthing-rust", branch = "master" }
 # webthing = { path = "./webthing-rust" }
+rppal = { git = "https://github.com/reitermarkus/rppal", branch = "hal" }
