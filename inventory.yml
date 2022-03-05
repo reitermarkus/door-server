@@ -2,7 +2,8 @@ all:
   hosts:
     door-server:
       ansible_user: pi
-      ansible_host: door-server.local
+      ansible_host: door-server
+      ansible_ssh_extra_args: '-o StrictHostKeyChecking=no'
   children:
     raspberry_pi:
       hosts:
