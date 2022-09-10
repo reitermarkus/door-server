@@ -2,7 +2,7 @@
 name = "door-server"
 version = "0.1.0"
 authors = ["Markus Reiter <me@reitermark.us>"]
-edition = "2018"
+edition = "2021"
 publish = false
 
 [dependencies]
