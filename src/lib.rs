@@ -21,7 +21,7 @@ pub trait StatefulDoor {
   fn is_open(&self) -> bool;
 }
 
-impl<T> StatefulDoor for &mut T where T: StatefulDoor {
+impl<T: StatefulDoor> StatefulDoor for &mut T {
   fn on_change(&mut self, callback: impl FnMut(bool) + Send + 'static) {
     (**self).on_change(callback)
   }
@@ -46,7 +46,7 @@ pub fn on_change_debounce(callback: impl FnMut(bool) + Send + 'static) -> impl F
     let expected_value = last_value.fetch_add(1, Ordering::SeqCst).wrapping_add(1);
 
     thread::spawn(move || {
-      sleep(Duration::from_millis(10));
+      sleep(Duration::from_millis(50));
 
       let current_value = last_value.load(Ordering::SeqCst);
       if current_value == expected_value {
