@@ -29,7 +29,7 @@ impl StatefulDoor for Door {
   fn on_change(&mut self, callback: impl FnMut(bool) + Send + 'static) {
     self.input.set_async_interrupt(
       Trigger::Both,
-      on_change_debounce(callback)
+      on_change_debounce(callback),
     ).unwrap()
   }
 
