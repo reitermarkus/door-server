@@ -13,7 +13,7 @@ serde_json = "1"
 webthing = "0.15.0"
 actix-rt = "2.7.0"
 uuid = "0.8.2"
-embedded-hal = "=1.0.0-alpha.7"
+embedded-hal = "=1.0.0-rc.1"
 embedded-hal-0 = { version = "0.2.7", package = "embedded-hal" }
 ws2812-spi = "0.4.0"
 smart-leds = "0.3.0"
