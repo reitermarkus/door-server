@@ -1,6 +1,11 @@
-use std::time::Duration;
-use std::sync::{Arc, atomic::{AtomicUsize, Ordering}, Mutex};
-use std::thread::{self, sleep};
+use std::{
+  sync::{
+    atomic::{AtomicUsize, Ordering},
+    Arc, Mutex,
+  },
+  thread::{self, sleep},
+  time::Duration,
+};
 
 use rppal::gpio::Level;
 

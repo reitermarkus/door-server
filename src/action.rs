@@ -1,6 +1,8 @@
-use std::any::Any;
-use std::sync::{Arc, RwLock, Weak};
-use std::thread;
+use std::{
+  any::Any,
+  sync::{Arc, RwLock, Weak},
+  thread,
+};
 
 use uuid::Uuid;
 use webthing::{Action, BaseAction, Thing};
@@ -15,19 +17,8 @@ macro_rules! action {
     }
 
     impl $ty {
-      pub fn new(
-        thing: Weak<RwLock<Box<dyn Thing>>>,
-        door: Arc<RwLock<Box<dyn Any + Send + Sync>>>,
-      ) -> Self {
-        Self {
-          action: BaseAction::new(
-            Uuid::new_v4().to_string(),
-            $action_name.to_owned(),
-            None,
-            thing,
-          ),
-          door
-        }
+      pub fn new(thing: Weak<RwLock<Box<dyn Thing>>>, door: Arc<RwLock<Box<dyn Any + Send + Sync>>>) -> Self {
+        Self { action: BaseAction::new(Uuid::new_v4().to_string(), $action_name.to_owned(), None, thing), door }
       }
     }
 
@@ -77,11 +68,7 @@ macro_rules! action {
       }
 
       fn perform_action(&mut self) {
-        let thing = if let Some(thing) = self.get_thing() {
-          thing.clone()
-        } else {
-          return
-        };
+        let thing = if let Some(thing) = self.get_thing() { thing.clone() } else { return };
         let action_name = self.get_name();
         let id = self.get_id();
         let door = self.door.clone();
@@ -104,7 +91,7 @@ macro_rules! action {
         self.action.finish()
       }
     }
-  }
+  };
 }
 
 action!(UnlockAction, "unlock", |door: &mut Box<dyn Any + Send + Sync>| {

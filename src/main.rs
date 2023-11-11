@@ -1,20 +1,21 @@
-use std::any::Any;
-use std::collections::HashMap;
-use std::ops::DerefMut;
-use std::sync::{Arc, Mutex, RwLock, Weak};
-use std::str;
-use std::net::UdpSocket;
-use std::thread;
+use std::{
+  any::Any,
+  collections::HashMap,
+  net::UdpSocket,
+  ops::DerefMut,
+  str,
+  sync::{Arc, Mutex, RwLock, Weak},
+  thread,
+};
 
 use rppal::gpio::{Gpio, Trigger};
 use serde_json::json;
-use webthing::{
-  Action, BaseProperty, BaseEvent, BaseThing, Thing, ThingsType, WebThingServer,
-  server::ActionGenerator,
-};
 use smart_leds::RGB8;
+use webthing::{
+  server::ActionGenerator, Action, BaseEvent, BaseProperty, BaseThing, Thing, ThingsType, WebThingServer,
+};
 
-use door_server::{on_change_debounce, Door, GarageDoor, WaveshareRelay, StatefulDoor};
+use door_server::{on_change_debounce, Door, GarageDoor, StatefulDoor, WaveshareRelay};
 
 mod action;
 use action::{LockAction, UnlockAction};
@@ -28,10 +29,10 @@ struct Generator {
 
 impl ActionGenerator for Generator {
   fn generate(
-      &self,
-      thing: Weak<RwLock<Box<dyn Thing>>>,
-      name: String,
-      _input: Option<&serde_json::Value>,
+    &self,
+    thing: Weak<RwLock<Box<dyn Thing>>>,
+    name: String,
+    _input: Option<&serde_json::Value>,
   ) -> Option<Box<dyn Action>> {
     let id = {
       let thing = thing.upgrade()?;
@@ -56,7 +57,11 @@ fn door_state(locked: Option<bool>) -> serde_json::Value {
   })
 }
 
-fn set_property<T: DerefMut<Target = Box<dyn Thing + 'static>>>(mut thing: T, property: &str, value: serde_json::Value) {
+fn set_property<T: DerefMut<Target = Box<dyn Thing + 'static>>>(
+  mut thing: T,
+  property: &str,
+  value: serde_json::Value,
+) {
   let locked_property = thing.find_property(property).unwrap();
 
   let previous_value = locked_property.get_value();
@@ -66,7 +71,13 @@ fn set_property<T: DerefMut<Target = Box<dyn Thing + 'static>>>(mut thing: T, pr
   }
 }
 
-fn make_door_thing(mut door: impl StatefulDoor, id: &str, name: &str, supports_locking: bool, mut on_change: impl FnMut(bool) + Send + Sync + 'static) -> Arc<RwLock<Box<dyn Thing + 'static>>> {
+fn make_door_thing(
+  mut door: impl StatefulDoor,
+  id: &str,
+  name: &str,
+  supports_locking: bool,
+  mut on_change: impl FnMut(bool) + Send + Sync + 'static,
+) -> Arc<RwLock<Box<dyn Thing + 'static>>> {
   let mut door_thing = BaseThing::new(
     format!("urn:dev:ops:32473-{}", id),
     name.to_owned(),
@@ -94,10 +105,7 @@ fn make_door_thing(mut door: impl StatefulDoor, id: &str, name: &str, supports_l
     "description": "Unlock the door.",
   });
 
-  door_thing.add_available_action(
-    "unlock".into(),
-    door_unlock.as_object().unwrap().to_owned(),
-  );
+  door_thing.add_available_action("unlock".into(), door_unlock.as_object().unwrap().to_owned());
 
   door_thing.add_available_event(
     "finger_scan".to_owned(),
@@ -105,7 +113,10 @@ fn make_door_thing(mut door: impl StatefulDoor, id: &str, name: &str, supports_l
       "description": "A finger has been scanned.",
       "type": "object",
       "unit": "",
-    }).as_object().unwrap().to_owned(),
+    })
+    .as_object()
+    .unwrap()
+    .to_owned(),
   );
 
   if supports_locking {
@@ -114,13 +125,10 @@ fn make_door_thing(mut door: impl StatefulDoor, id: &str, name: &str, supports_l
       "description": "Lock the door.",
     });
 
-    door_thing.add_available_action(
-      "lock".into(),
-      door_lock.as_object().unwrap().to_owned(),
-    );
+    door_thing.add_available_action("lock".into(), door_lock.as_object().unwrap().to_owned());
   }
 
-  let thing: Arc<RwLock<Box<dyn Thing + 'static>>>  = Arc::new(RwLock::new(Box::new(door_thing)));
+  let thing: Arc<RwLock<Box<dyn Thing + 'static>>> = Arc::new(RwLock::new(Box::new(door_thing)));
 
   // Initialize at start.
   on_change(door.is_closed());
@@ -151,7 +159,7 @@ async fn main() {
   let led = Arc::new(Mutex::new((
     gpio.get(23).unwrap().into_output(),
     gpio.get(24).unwrap().into_output(),
-    gpio.get(25).unwrap().into_output()
+    gpio.get(25).unwrap().into_output(),
   )));
 
   let mut ring = RgbRing::new();
@@ -175,7 +183,10 @@ async fn main() {
       "description": "The door bell has been rung.",
       "type": "object",
       "unit": "",
-    }).as_object().unwrap().to_owned(),
+    })
+    .as_object()
+    .unwrap()
+    .to_owned(),
   );
 
   let main_door: Arc<RwLock<Box<dyn Any + Send + Sync>>> = Arc::new(RwLock::new(Box::new(main_door)));
@@ -184,14 +195,19 @@ async fn main() {
   things.push(main_door_thing.clone());
 
   let main_door_thing_clone = main_door_thing.clone();
-  door_bell_button.set_async_interrupt(Trigger::FallingEdge, on_change_debounce(move |_| {
-    let main_door_thing = &main_door_thing_clone;
+  door_bell_button
+    .set_async_interrupt(
+      Trigger::FallingEdge,
+      on_change_debounce(move |_| {
+        let main_door_thing = &main_door_thing_clone;
 
-    log::info!("Door bell button pressed.");
+        log::info!("Door bell button pressed.");
 
-    let event = Box::new(BaseEvent::new("bell".to_owned(), Some(json!(true))));
-    main_door_thing.write().unwrap().add_event(event);
-  })).unwrap();
+        let event = Box::new(BaseEvent::new("bell".to_owned(), Some(json!(true))));
+        main_door_thing.write().unwrap().add_event(event);
+      }),
+    )
+    .unwrap();
 
   let cellar_door_input = gpio.get(27).unwrap().into_input_pullup();
   let mut cellar_door = Door::new(relay.ch2, cellar_door_input);
@@ -210,12 +226,7 @@ async fn main() {
   let stop_output = relay.ch4;
   let open_output = relay.ch3;
   let close_output = relay.ch5;
-  let mut garage_door = GarageDoor::new(
-    stop_output,
-    open_output,
-    close_output,
-    garage_door_input,
-  );
+  let mut garage_door = GarageDoor::new(stop_output, open_output, close_output, garage_door_input);
   let led_clone = led.clone();
   let ring_clone = ring.clone();
   let garage_door_thing = make_door_thing(&mut garage_door, "garage-door-1", "Garage Door", true, move |closed| {
@@ -238,30 +249,33 @@ async fn main() {
 
   let garage_door_clone = garage_door.clone();
   let led_clone = led.clone();
-  garage_door_button.set_async_interrupt(Trigger::FallingEdge, on_change_debounce(move |_| {
-    log::info!("Garage door button pressed.");
+  garage_door_button
+    .set_async_interrupt(
+      Trigger::FallingEdge,
+      on_change_debounce(move |_| {
+        log::info!("Garage door button pressed.");
 
-    let mut led = led_clone.lock().unwrap();
-    led.0.set_high();
-    led.1.set_high();
-    led.2.set_low();
+        let mut led = led_clone.lock().unwrap();
+        led.0.set_high();
+        led.1.set_high();
+        led.2.set_low();
 
-    let mut garage_door = garage_door_clone.write().unwrap();
-    let garage_door = garage_door.downcast_mut::<GarageDoor>().unwrap();
+        let mut garage_door = garage_door_clone.write().unwrap();
+        let garage_door = garage_door.downcast_mut::<GarageDoor>().unwrap();
 
-    if garage_door.is_open() {
-      garage_door.close()
-    } else {
-      garage_door.open()
-    }
-  })).unwrap();
+        if garage_door.is_open() {
+          garage_door.close()
+        } else {
+          garage_door.open()
+        }
+      }),
+    )
+    .unwrap();
 
   doors.insert(garage_door_thing.read().unwrap().get_id(), garage_door.clone());
   things.push(garage_door_thing.clone());
 
-  let generator = Generator {
-    doors,
-  };
+  let generator = Generator { doors };
 
   let socket = UdpSocket::bind("0.0.0.0:56000").unwrap();
   thread::spawn(move || {
@@ -269,36 +283,34 @@ async fn main() {
 
     loop {
       match socket.recv_from(&mut buf) {
-        Ok((size, _)) => {
-          match str::from_utf8  (&buf[..size]) {
-            Ok(s) => match s.parse::<ekey::multi::Multi>() {
-              Ok(packet) => {
-                dbg!(&packet);
+        Ok((size, _)) => match str::from_utf8(&buf[..size]) {
+          Ok(s) => match s.parse::<ekey::multi::Multi>() {
+            Ok(packet) => {
+              dbg!(&packet);
 
-                let value = serde_json::value::to_value(&packet).unwrap();
-                let event = Box::new(BaseEvent::new("finger_scan".to_owned(), Some(value)));
+              let value = serde_json::value::to_value(&packet).unwrap();
+              let event = Box::new(BaseEvent::new("finger_scan".to_owned(), Some(value)));
 
-                match packet.finger_scanner_name() {
-                  "HT" => {
-                    let main_door = &mut *main_door_thing.write().unwrap();
-                    main_door.add_event(event);
-                  },
-                  "KT" => {
-                    let cellar_door = &mut *cellar_door_thing.write().unwrap();
-                    cellar_door.add_event(event);
-                  },
-                  "GT" => {
-                    let garage_door = &mut *garage_door_thing.write().unwrap();
-                    garage_door.add_event(event);
-                  },
-                  _ => (),
-                }
-              },
-              Err(_) => log::error!("Invalid EKEY message format."),
+              match packet.finger_scanner_name() {
+                "HT" => {
+                  let main_door = &mut *main_door_thing.write().unwrap();
+                  main_door.add_event(event);
+                },
+                "KT" => {
+                  let cellar_door = &mut *cellar_door_thing.write().unwrap();
+                  cellar_door.add_event(event);
+                },
+                "GT" => {
+                  let garage_door = &mut *garage_door_thing.write().unwrap();
+                  garage_door.add_event(event);
+                },
+                _ => (),
+              }
             },
-            Err(_) => log::error!("Invalid EKEY request."),
-          }
-        }
+            Err(_) => log::error!("Invalid EKEY message format."),
+          },
+          Err(_) => log::error!("Invalid EKEY request."),
+        },
         Err(err) => log::error!("{}", err),
       }
     }

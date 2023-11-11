@@ -1,4 +1,4 @@
-use rppal::spi::{Bus, Mode as SpiMode, Spi, SlaveSelect};
+use rppal::spi::{Bus, Mode as SpiMode, SlaveSelect, Spi};
 use smart_leds::RGB8;
 
 const fn encode_byte(data: u8) -> [u8; 4] {
@@ -7,8 +7,7 @@ const fn encode_byte(data: u8) -> [u8; 4] {
   }
 
   const fn encode_crumb(crumb: u8) -> u8 {
-    (encode_bit(crumb >> 1) << 4) +
-    encode_bit(crumb & 1)
+    (encode_bit(crumb >> 1) << 4) + encode_bit(crumb & 1)
   }
 
   [
@@ -46,12 +45,7 @@ impl RgbRing {
     let spi_freq = 800_000 * 3;
 
     Self {
-      spi: Spi::new(
-        Bus::Spi0,
-        SlaveSelect::Ss0,
-        spi_freq,
-        SpiMode::Mode0,
-      ).unwrap(),
+      spi: Spi::new(Bus::Spi0, SlaveSelect::Ss0, spi_freq, SpiMode::Mode0).unwrap(),
       colors: Default::default(),
       buffer: Vec::new(),
     }
@@ -89,17 +83,8 @@ impl RgbRing {
 
 pub fn closed_to_color(closed: bool) -> RGB8 {
   if closed {
-    RGB8 {
-      r: 0x00,
-      g: 0x0f,
-      b: 0x01,
-    }
+    RGB8 { r: 0x00, g: 0x0f, b: 0x01 }
   } else {
-    RGB8 {
-      r: 0x14,
-      g: 0x00,
-      b: 0x00,
-    }
+    RGB8 { r: 0x14, g: 0x00, b: 0x00 }
   }
 }
-

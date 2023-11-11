@@ -30,15 +30,6 @@ impl WaveshareRelay {
     let mut ch8 = gpio.get(26).unwrap().into_output();
     ch8.set_high();
 
-    Self {
-      ch1,
-      ch2,
-      ch3,
-      ch4,
-      ch5,
-      ch6,
-      ch7,
-      ch8,
-    }
+    Self { ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8 }
   }
 }

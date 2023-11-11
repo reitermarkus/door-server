@@ -1,5 +1,4 @@
-use std::time::Duration;
-use std::thread::sleep;
+use std::{thread::sleep, time::Duration};
 
 use rppal::gpio::{InputPin, OutputPin, Trigger};
 
@@ -27,10 +26,7 @@ impl Door {
 
 impl StatefulDoor for Door {
   fn on_change(&mut self, callback: impl FnMut(bool) + Send + 'static) {
-    self.input.set_async_interrupt(
-      Trigger::Both,
-      on_change_debounce(callback),
-    ).unwrap()
+    self.input.set_async_interrupt(Trigger::Both, on_change_debounce(callback)).unwrap()
   }
 
   fn is_closed(&self) -> bool {
