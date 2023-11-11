@@ -46,7 +46,7 @@ pub fn on_change_debounce(callback: impl FnMut(bool) + Send + 'static) -> impl F
     let expected_value = last_value.fetch_add(1, Ordering::SeqCst).wrapping_add(1);
 
     thread::spawn(move || {
-      sleep(Duration::from_millis(50));
+      sleep(Duration::from_millis(100));
 
       let current_value = last_value.load(Ordering::SeqCst);
       if current_value == expected_value {
