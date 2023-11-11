@@ -76,6 +76,7 @@ macro_rules! action {
         thread::spawn(move || {
           let mut door = door.write().unwrap();
 
+          #[allow(clippy::redundant_closure_call)]
           $method(&mut *door);
 
           let mut thing = thing.write().unwrap();
