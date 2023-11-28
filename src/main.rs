@@ -10,18 +10,17 @@ use std::{
 
 use rppal::gpio::{Gpio, Trigger};
 use serde_json::json;
-use smart_leds::RGB8;
 use webthing::{
   server::ActionGenerator, Action, BaseEvent, BaseProperty, BaseThing, Thing, ThingsType, WebThingServer,
 };
 
-use door_server::{on_change_debounce, Door, GarageDoor, StatefulDoor, WaveshareRelay};
+use door_server::{on_change_debounce, Door, GarageDoor, StatefulDoor};
 
 mod action;
 use action::{LockAction, UnlockAction};
 
-mod led;
-use led::{closed_to_color, RgbRing};
+use door_server::led::closed_to_color;
+use door_server::Board;
 
 struct Generator {
   doors: HashMap<String, Arc<RwLock<Box<dyn Any + Send + Sync>>>>,
@@ -149,28 +148,19 @@ fn make_door_thing(
 async fn main() {
   env_logger::init();
 
-  let mut gpio = Gpio::new().unwrap();
-
-  let relay = WaveshareRelay::new(&mut gpio);
+  let gpio = Gpio::new().unwrap();
+  let board = Board::new(gpio);
 
   let mut things = Vec::new();
   let mut doors = HashMap::new();
 
-  let led = Arc::new(Mutex::new((
-    gpio.get(23).unwrap().into_output(),
-    gpio.get(24).unwrap().into_output(),
-    gpio.get(25).unwrap().into_output(),
-  )));
+  let led = Arc::new(Mutex::new(board.led));
+  let ring = Arc::new(Mutex::new(board.ring));
 
-  let mut ring = RgbRing::new();
-  ring.set_bottom_left(RGB8 { r: 0x01, g: 0x01, b: 0x01 });
-  let ring = Arc::new(Mutex::new(ring));
+  let mut door_bell_button = board.main_door_bell;
+  let mut garage_door_button = board.garage_door_button;
 
-  let mut door_bell_button = gpio.get(1).unwrap().into_input_pullup();
-  let mut garage_door_button = gpio.get(4).unwrap().into_input_pullup();
-
-  let main_door_input = gpio.get(17).unwrap().into_input_pullup();
-  let mut main_door = Door::new(relay.ch1, main_door_input);
+  let mut main_door = Door::new(board.main_door_open, board.main_door_contact);
   let ring_clone = ring.clone();
   let main_door_thing = make_door_thing(&mut main_door, "main-door-1", "Main Door", false, move |closed| {
     let mut ring = ring_clone.lock().unwrap();
@@ -209,8 +199,7 @@ async fn main() {
     )
     .unwrap();
 
-  let cellar_door_input = gpio.get(27).unwrap().into_input_pullup();
-  let mut cellar_door = Door::new(relay.ch2, cellar_door_input);
+  let mut cellar_door = Door::new(board.cellar_door_open, board.cellar_door_contact);
   let ring_clone = ring.clone();
   let cellar_door_thing = make_door_thing(&mut cellar_door, "cellar-door-1", "Cellar Door", false, move |closed| {
     let mut ring = ring_clone.lock().unwrap();
@@ -222,10 +211,10 @@ async fn main() {
   doors.insert(cellar_door_thing.read().unwrap().get_id(), cellar_door.clone());
   things.push(cellar_door_thing.clone());
 
-  let garage_door_input = gpio.get(22).unwrap().into_input_pullup();
-  let stop_output = relay.ch4;
-  let open_output = relay.ch3;
-  let close_output = relay.ch5;
+  let garage_door_input = board.garage_door_2_contact;
+  let stop_output = board.garage_door_2_stop;
+  let open_output = board.garage_door_2_open;
+  let close_output = board.garage_door_2_close;
   let mut garage_door = GarageDoor::new(stop_output, open_output, close_output, garage_door_input);
   let led_clone = led.clone();
   let ring_clone = ring.clone();

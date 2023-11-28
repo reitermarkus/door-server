@@ -9,11 +9,16 @@ use std::{
 
 use rppal::gpio::Level;
 
+mod board;
+pub use board::Board;
+
 mod door;
 pub use door::Door;
 
 mod garage_door;
 pub use garage_door::GarageDoor;
+
+pub mod led;
 
 mod waveshare_relay;
 pub use waveshare_relay::WaveshareRelay;

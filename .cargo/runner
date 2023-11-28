@@ -9,5 +9,5 @@ binary_name="$(basename "${1}")"
 remote_path="/tmp/${binary_name}"
 
 scp "${1}" "${ssh_host}:${remote_path}"
-ssh "${ssh_host}" "sudo systemctl stop '${binary_name}'"
+ssh "${ssh_host}" "sudo systemctl stop '${binary_name}'" || true
 ssh -t "${ssh_host}" "sudo RUST_LOG='${RUST_LOG-}' '${remote_path}'"
