@@ -13,7 +13,7 @@ serde_json = "1"
 webthing = "0.15.2"
 actix-rt = "2.9.0"
 uuid = "1"
-embedded-hal = "1.0.0-rc.1"
+embedded-hal = "1.0.0-rc.2"
 embedded-hal-0 = { version = "0.2.7", package = "embedded-hal" }
 ws2812-spi = { version = "0.4.0", features = ["std"] }
 smart-leds = "0.3.0"
@@ -28,5 +28,5 @@ name = "door-server"
 path = "src/main.rs"
 
 [patch.crates-io]
-rppal = { git = "https://github.com/golemparts/rppal", branch = "master" }
+rppal = { git = "https://github.com/reitermarkus/rppal", branch = "embedded-hal" }
 ws2812-spi = { git = "https://github.com/smart-leds-rs/ws2812-spi-rs", branch = "dev/hosted" }
