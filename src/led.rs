@@ -15,10 +15,7 @@ impl RgbRing {
     let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, spi_freq, SpiMode::Mode0).unwrap();
     let ws2812 = Ws2812::new(spi);
 
-    Self {
-      inner: ws2812,
-      colors: Default::default(),
-    }
+    Self { inner: ws2812, colors: Default::default() }
   }
 
   pub fn set_top_right(&mut self, color: RGB8) {

@@ -48,7 +48,7 @@ impl Board {
         let mut ring = RgbRing::new();
         ring.set_bottom_left(RGB8 { r: 0x01, g: 0x01, b: 0x01 });
         ring
-      }
+      },
     }
   }
 }

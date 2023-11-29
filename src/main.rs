@@ -19,8 +19,7 @@ use door_server::{on_change_debounce, Door, GarageDoor, StatefulDoor};
 mod action;
 use action::{LockAction, UnlockAction};
 
-use door_server::led::closed_to_color;
-use door_server::Board;
+use door_server::{led::closed_to_color, Board};
 
 struct Generator {
   doors: HashMap<String, Arc<RwLock<Box<dyn Any + Send + Sync>>>>,

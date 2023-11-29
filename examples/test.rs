@@ -1,5 +1,8 @@
-use rppal::{gpio::{Gpio, Trigger}, hal::Delay};
 use embedded_hal::delay::DelayUs;
+use rppal::{
+  gpio::{Gpio, Trigger},
+  hal::Delay,
+};
 
 #[derive(PartialEq)]
 enum Dir {
@@ -17,13 +20,13 @@ fn test_gpio(gpio: &mut Gpio, delay: &mut impl DelayUs, description: &str, n: u8
 
       println!("Waiting for GPIO{n} ({description}) to be pulled low.");
 
-      while gpio.is_high()  {
+      while gpio.is_high() {
         delay.delay_ms(10).unwrap();
       }
 
       println!("GPIO{n} was pulled low.");
 
-      while gpio.is_low()  {
+      while gpio.is_low() {
         delay.delay_ms(10).unwrap();
       }
 
@@ -38,7 +41,7 @@ fn test_gpio(gpio: &mut Gpio, delay: &mut impl DelayUs, description: &str, n: u8
       delay.delay_ms(1000).unwrap();
       gpio.set_high();
       delay.delay_ms(1000).unwrap();
-    }
+    },
   }
 }
 
