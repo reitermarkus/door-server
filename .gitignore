@@ -1,1 +1,4 @@
 /target
+pcb/*
+!pcb/*.kicad_pcb
+!pcb/*.kicad_sch
