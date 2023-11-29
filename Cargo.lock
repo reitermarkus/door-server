@@ -578,7 +578,7 @@ dependencies = [
  "rppal",
  "serde_json",
  "smart-leds",
- "uuid 0.8.2",
+ "uuid 1.6.1",
  "webthing",
  "ws2812-spi",
 ]
