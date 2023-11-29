@@ -2,3 +2,4 @@
 pcb/*
 !pcb/*.kicad_pcb
 !pcb/*.kicad_sch
+!pcb/*.kicad_pro
