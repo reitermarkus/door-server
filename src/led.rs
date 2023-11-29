@@ -1,42 +1,10 @@
 use rppal::spi::{Bus, Mode as SpiMode, SlaveSelect, Spi};
-use smart_leds::RGB8;
-
-const fn encode_byte(data: u8) -> [u8; 4] {
-  const fn encode_bit(bit: u8) -> u8 {
-    0b1000 + bit * 0b0110
-  }
-
-  const fn encode_crumb(crumb: u8) -> u8 {
-    (encode_bit(crumb >> 1) << 4) + encode_bit(crumb & 1)
-  }
-
-  [
-    encode_crumb(data >> 6),
-    encode_crumb((data >> 4) & 0b11),
-    encode_crumb((data >> 2) & 0b11),
-    encode_crumb(data & 0b11),
-  ]
-}
-
-fn encode_colors(buffer: &mut Vec<u8>, data: &[RGB8]) {
-  buffer.clear();
-  buffer.push(0);
-
-  for pixel in data {
-    buffer.extend(&encode_byte(pixel.g));
-    buffer.extend(&encode_byte(pixel.r));
-    buffer.extend(&encode_byte(pixel.b));
-  }
-
-  for _ in 0..20 {
-    buffer.push(0);
-  }
-}
+use smart_leds::{SmartLedsWrite, RGB8};
+use ws2812_spi::hosted::Ws2812;
 
 pub struct RgbRing {
-  spi: Spi,
+  inner: Ws2812<Spi>,
   colors: [RGB8; 12],
-  buffer: Vec<u8>,
 }
 
 impl RgbRing {
@@ -44,40 +12,33 @@ impl RgbRing {
     // On Raspberry Pi, `core_freq=250` must be set in `/boot/config.txt` in order to have a stable SPI frequency.
     let spi_freq = 800_000 * 3;
 
+    let spi = Spi::new(Bus::Spi0, SlaveSelect::Ss0, spi_freq, SpiMode::Mode0).unwrap();
+    let ws2812 = Ws2812::new(spi);
+
     Self {
-      spi: Spi::new(Bus::Spi0, SlaveSelect::Ss0, spi_freq, SpiMode::Mode0).unwrap(),
+      inner: ws2812,
       colors: Default::default(),
-      buffer: Vec::new(),
     }
   }
 
   pub fn set_top_right(&mut self, color: RGB8) {
-    self.colors[0] = color;
-    self.colors[1] = color;
-    self.colors[2] = color;
+    self.colors[0..=2].fill(color);
   }
 
   pub fn set_bottom_right(&mut self, color: RGB8) {
-    self.colors[3] = color;
-    self.colors[4] = color;
-    self.colors[5] = color;
+    self.colors[3..=5].fill(color);
   }
 
   pub fn set_bottom_left(&mut self, color: RGB8) {
-    self.colors[6] = color;
-    self.colors[7] = color;
-    self.colors[8] = color;
+    self.colors[6..=8].fill(color);
   }
 
   pub fn set_top_left(&mut self, color: RGB8) {
-    self.colors[9] = color;
-    self.colors[10] = color;
-    self.colors[11] = color;
+    self.colors[9..=11].fill(color);
   }
 
   pub fn render(&mut self) {
-    encode_colors(&mut self.buffer, &self.colors);
-    self.spi.write(&self.buffer).unwrap();
+    self.inner.write(self.colors.iter().cloned()).unwrap();
   }
 }
 

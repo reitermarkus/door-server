@@ -15,7 +15,7 @@ actix-rt = "2.9.0"
 uuid = "0.8.2"
 embedded-hal = "1.0.0-alpha.9"
 embedded-hal-0 = { version = "0.2.7", package = "embedded-hal" }
-ws2812-spi = "0.4.0"
+ws2812-spi = { version = "0.4.0", features = ["std"] }
 smart-leds = "0.3.0"
 ekey = "0.4.0"
 
@@ -26,3 +26,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "door-server"
 path = "src/main.rs"
+
+[patch.crates-io]
+ws2812-spi = { git = "https://github.com/smart-leds-rs/ws2812-spi-rs", branch = "dev/hosted" }
