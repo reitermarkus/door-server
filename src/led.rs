@@ -41,7 +41,7 @@ pub struct RgbRing {
 
 impl RgbRing {
   pub fn new() -> Self {
-    // Raspberry Pi `/boot/config.txt` must be set to use a core frequency of 250 MHz.
+    // On Raspberry Pi, `core_freq=250` must be set in `/boot/config.txt` in order to have a stable SPI frequency.
     let spi_freq = 800_000 * 3;
 
     Self {

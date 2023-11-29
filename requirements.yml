@@ -1,6 +1,5 @@
 roles:
-  - name: jnv.unattended-upgrades
-  - name: whiskerlabs.watchdog
+  - name: infothrill.rpi_boot_config
 
 collections:
   - name: https://github.com/reitermarkus/ansible-collections.git

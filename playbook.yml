@@ -35,6 +35,12 @@
         enabled: yes
       tags:
         - deploy
+    - name: Set core frequency
+      include_role:
+        name: infothrill.rpi_boot_config
+      vars:
+        boot_config:
+          core_freq: '250'
     - name: Install service
       copy:
         content: |
