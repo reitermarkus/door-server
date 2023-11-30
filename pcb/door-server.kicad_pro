@@ -34,9 +34,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 2.75,
-          "height": 2.75,
-          "width": 2.75
+          "drill": 2.7,
+          "height": 6.0,
+          "width": 6.0
         },
         "silk_line_width": 0.12,
         "silk_text_italic": false,
@@ -412,13 +412,13 @@
     "classes": [
       {
         "bus_width": 20,
-        "clearance": 0.4,
-        "diff_pair_gap": 0.25,
+        "clearance": 0.2,
+        "diff_pair_gap": 0.0,
         "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.2,
+        "diff_pair_width": 0.0,
         "line_style": 0,
-        "microvia_diameter": 0.3,
-        "microvia_drill": 0.1,
+        "microvia_diameter": 0.0,
+        "microvia_drill": 0.0,
         "name": "Default",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
@@ -430,12 +430,12 @@
       {
         "bus_width": 20,
         "clearance": 0.8,
-        "diff_pair_gap": 0.25,
+        "diff_pair_gap": 0.0,
         "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.2,
+        "diff_pair_width": 0.0,
         "line_style": 0,
-        "microvia_diameter": 0.3,
-        "microvia_drill": 0.1,
+        "microvia_diameter": 0.0,
+        "microvia_drill": 0.0,
         "name": "250V",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
@@ -447,67 +447,84 @@
       {
         "bus_width": 20,
         "clearance": 0.2,
-        "diff_pair_gap": 0.25,
+        "diff_pair_gap": 0.0,
         "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.2,
+        "diff_pair_width": 0.0,
         "line_style": 0,
-        "microvia_diameter": 0.3,
-        "microvia_drill": 0.1,
+        "microvia_diameter": 0.0,
+        "microvia_drill": 0.0,
         "name": "3.3V",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 0.5,
-        "via_diameter": 1.0,
-        "via_drill": 0.6,
+        "track_width": 0.4,
+        "via_diameter": 0.8,
+        "via_drill": 0.4,
         "wire_width": 10
       },
       {
         "bus_width": 20,
         "clearance": 0.2,
-        "diff_pair_gap": 0.25,
+        "diff_pair_gap": 0.0,
         "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.2,
+        "diff_pair_width": 0.0,
         "line_style": 0,
-        "microvia_diameter": 0.3,
-        "microvia_drill": 0.1,
+        "microvia_diameter": 0.0,
+        "microvia_drill": 0.0,
         "name": "5V",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 0.7,
+        "track_width": 0.6,
         "via_diameter": 1.2,
         "via_drill": 0.8,
         "wire_width": 10
       },
       {
         "bus_width": 20,
-        "clearance": 0.8,
-        "diff_pair_gap": 0.25,
+        "clearance": 0.3,
+        "diff_pair_gap": 0.0,
         "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.2,
+        "diff_pair_width": 0.0,
         "line_style": 0,
-        "microvia_diameter": 0.3,
-        "microvia_drill": 0.1,
+        "microvia_diameter": 0.0,
+        "microvia_drill": 0.0,
         "name": "EKEY Bus",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 1.2,
-        "via_diameter": 1.6,
-        "via_drill": 1.0,
+        "track_width": 1.0,
+        "via_diameter": 1.4,
+        "via_drill": 0.8,
         "wire_width": 10
       },
       {
         "bus_width": 20,
         "clearance": 0.2,
-        "diff_pair_gap": 0.25,
+        "diff_pair_gap": 0.0,
         "diff_pair_via_gap": 0.25,
-        "diff_pair_width": 0.2,
+        "diff_pair_width": 0.0,
         "line_style": 0,
-        "microvia_diameter": 0.3,
-        "microvia_drill": 0.1,
+        "microvia_diameter": 0.0,
+        "microvia_drill": 0.0,
+        "name": "MBUS",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 0.8,
+        "via_diameter": 1.2,
+        "via_drill": 0.8,
+        "wire_width": 10
+      },
+      {
+        "bus_width": 20,
+        "clearance": 0.2,
+        "diff_pair_gap": 0.0,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.0,
+        "line_style": 0,
+        "microvia_diameter": 0.0,
+        "microvia_drill": 0.0,
         "name": "Signal",
         "pcb_color": "rgba(0, 0, 0, 0.000)",
         "schematic_color": "rgba(0, 0, 0, 0.000)",
-        "track_width": 0.4,
+        "track_width": 0.2,
         "via_diameter": 0.7,
         "via_drill": 0.4,
         "wire_width": 10
@@ -770,11 +787,11 @@
         "pattern": "CELLAR_DOOR_OPEN"
       },
       {
-        "netclass": "3.3V",
+        "netclass": "Signal",
         "pattern": "GARAGE_DOOR_BUTTON"
       },
       {
-        "netclass": "3.3V",
+        "netclass": "Signal",
         "pattern": "GARAGE_DOOR_BUTTON_LED_R"
       },
       {
@@ -818,7 +835,7 @@
         "pattern": "GARAGE_DOOR_BUTTON_LED_B"
       },
       {
-        "netclass": "3.3V",
+        "netclass": "Signal",
         "pattern": "GARAGE_DOOR_BUTTON_LED_G"
       },
       {
@@ -846,11 +863,11 @@
         "pattern": "GARAGE_DOOR2_CONTACT"
       },
       {
-        "netclass": "3.3V",
+        "netclass": "Signal",
         "pattern": "UART_TX"
       },
       {
-        "netclass": "3.3V",
+        "netclass": "Signal",
         "pattern": "UART_RX"
       },
       {
@@ -858,11 +875,11 @@
         "pattern": "DOOR_STATUS_RGB_RING"
       },
       {
-        "netclass": "5V",
+        "netclass": "MBUS",
         "pattern": "/MBUS+"
       },
       {
-        "netclass": "5V",
+        "netclass": "MBUS",
         "pattern": "/MBUS-"
       },
       {
@@ -976,6 +993,294 @@
       {
         "netclass": "5V",
         "pattern": "/Untitled Sheet/GARAGE_DOOR2_OPEN_S8050_C"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_O_K"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_O_K"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_O_K"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_LED_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_LED_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_LED_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_LED_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_O_K"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_O_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_O_K"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_LED_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_O_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_O_K"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_O_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_O_K"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_O_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_LED_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_LED_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_LED_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_O_K"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_O_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_O_A"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_O_A"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_S8050_C"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_S8050_C"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_S8050_C"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_NC"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_NO"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_COM"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_NC"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_COM"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_COM"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_NC"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_NO"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_COM"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_NC"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_NO"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_COM"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_NC"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_NO"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_NO"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_NO"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_COM"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_NC"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_NO"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_COM"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_NC"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_NO"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_COM"
+      },
+      {
+        "netclass": "250V",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_NC"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_O_A"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_S8050_C"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_S8050_C"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_O_E"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/MAIN_DOOR_OPEN_S8050_B"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_S8050_C"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_S8050_C"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_S8050_C"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_O_E"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/CELLAR_DOOR_OPEN_S8050_B"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_O_E"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_O_E"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_CLOSE_S8050_B"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_STOP_S8050_B"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_O_E"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_O_E"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_O_E"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_S8050_B"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR2_OPEN_O_E"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_CLOSE_S8050_B"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_OPEN_S8050_B"
+      },
+      {
+        "netclass": "Signal",
+        "pattern": "/Relays/GARAGE_DOOR_STOP_S8050_B"
       }
     ]
   },
