@@ -45,7 +45,7 @@
         "silk_text_thickness": 0.153,
         "silk_text_upright": false,
         "zones": {
-          "min_clearance": 0.19999999999999998
+          "min_clearance": 0.6
         }
       },
       "diff_pair_dimensions": [
@@ -55,7 +55,20 @@
           "width": 0.0
         }
       ],
-      "drc_exclusions": [],
+      "drc_exclusions": [
+        "courtyards_overlap|261151812|113909747|de034c80-9e40-40d8-83a4-1a2f47c8ecf3|7eccca92-86a0-4960-a653-e5e1b63ddf02",
+        "npth_inside_courtyard|261000000|122400000|077cccaf-e5a5-4f79-b5e2-c764740f3441|de034c80-9e40-40d8-83a4-1a2f47c8ecf3",
+        "npth_inside_courtyard|261000000|132600000|46854954-7168-4f87-a278-1c68a43af5b0|de034c80-9e40-40d8-83a4-1a2f47c8ecf3",
+        "npth_inside_courtyard|261500000|117000000|bdee4ce4-902a-43f4-a64b-bee101d72725|7eccca92-86a0-4960-a653-e5e1b63ddf02",
+        "npth_inside_courtyard|261500000|85000000|26d9857f-5b14-4efd-b147-04dfdc3313bd|7eccca92-86a0-4960-a653-e5e1b63ddf02",
+        "pth_inside_courtyard|257800000|126990000|0ff56ca0-6e43-4e3a-ac10-4005df263483|de034c80-9e40-40d8-83a4-1a2f47c8ecf3",
+        "pth_inside_courtyard|38750000|132250000|48ee20b2-6e88-4719-8faf-d696d5d32a72|9659c44e-23a6-4356-8122-683ccb854a63",
+        "pth_inside_courtyard|38750000|69750000|951c96df-ab2a-4ed7-9b5e-7091d66df059|9659c44e-23a6-4356-8122-683ccb854a63",
+        "pth_inside_courtyard|42250000|132250000|910c1eec-3dd5-42da-afeb-d1b081c98213|9659c44e-23a6-4356-8122-683ccb854a63",
+        "pth_inside_courtyard|42250000|69750000|6fc2f5a1-37fe-4cc6-a9c8-a933099daf7e|9659c44e-23a6-4356-8122-683ccb854a63",
+        "pth_inside_courtyard|45750000|132250000|11e28d37-e50a-4eff-943a-1271cf7bb5b9|9659c44e-23a6-4356-8122-683ccb854a63",
+        "pth_inside_courtyard|45750000|69750000|456128f8-f07a-4c58-a523-2e9a6eef2291|9659c44e-23a6-4356-8122-683ccb854a63"
+      ],
       "meta": {
         "version": 2
       },
@@ -401,7 +414,9 @@
     }
   },
   "libraries": {
-    "pinned_footprint_libs": [],
+    "pinned_footprint_libs": [
+      "MR-Logo"
+    ],
     "pinned_symbol_libs": []
   },
   "meta": {
@@ -424,6 +439,23 @@
         "schematic_color": "rgba(0, 0, 0, 0.000)",
         "track_width": 1.0,
         "via_diameter": 1.2,
+        "via_drill": 0.8,
+        "wire_width": 10
+      },
+      {
+        "bus_width": 20,
+        "clearance": 0.3,
+        "diff_pair_gap": 0.0,
+        "diff_pair_via_gap": 0.25,
+        "diff_pair_width": 0.0,
+        "line_style": 0,
+        "microvia_diameter": 0.0,
+        "microvia_drill": 0.0,
+        "name": "24V",
+        "pcb_color": "rgba(0, 0, 0, 0.000)",
+        "schematic_color": "rgba(0, 0, 0, 0.000)",
+        "track_width": 1.1,
+        "via_diameter": 1.4,
         "via_drill": 0.8,
         "wire_width": 10
       },
@@ -1281,6 +1313,18 @@
       {
         "netclass": "Signal",
         "pattern": "/Relays/GARAGE_DOOR_STOP_S8050_B"
+      },
+      {
+        "netclass": "5V",
+        "pattern": "/Power Supply/PWR_OUT"
+      },
+      {
+        "netclass": "24V",
+        "pattern": "+VDC"
+      },
+      {
+        "netclass": "24V",
+        "pattern": "/Power Supply/PWR_IN"
       }
     ]
   },
@@ -1337,6 +1381,10 @@
     [
       "29633f58-8b61-4bd6-96b6-f9ce2ac9fd4f",
       "Relays"
+    ],
+    [
+      "62ecf916-6bd0-4d61-a49d-1906e2425f67",
+      "Power Supply"
     ]
   ],
   "text_variables": {}

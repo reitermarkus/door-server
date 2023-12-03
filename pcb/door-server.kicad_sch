@@ -3141,6 +3141,23 @@
     )
   )
 
+  (sheet (at 130.175 48.26) (size 22.86 19.05) (fields_autoplaced)
+    (stroke (width 0.1524) (type solid))
+    (fill (color 0 0 0 0.0000))
+    (uuid 62ecf916-6bd0-4d61-a49d-1906e2425f67)
+    (property "Sheetname" "Power Supply" (at 130.175 47.5484 0)
+      (effects (font (size 1.27 1.27)) (justify left bottom))
+    )
+    (property "Sheetfile" "power-supply.kicad_sch" (at 130.175 67.8946 0)
+      (effects (font (size 1.27 1.27)) (justify left top))
+    )
+    (instances
+      (project "door-server"
+        (path "/3837392b-f24c-487e-8a15-3e756935fe56" (page "3"))
+      )
+    )
+  )
+
   (sheet_instances
     (path "/" (page "1"))
   )
