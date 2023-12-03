@@ -986,6 +986,9 @@
     (stroke (width 0.1) (type default)) (layer "Edge.Cuts") (tstamp a4a67d21-ba34-4bf0-9e47-c7c835e344c1))
   (gr_arc (start 114 100) (mid 115.414214 100.585786) (end 116 102)
     (stroke (width 0.1) (type default)) (layer "Edge.Cuts") (tstamp dc634461-2765-45c5-891d-03d56402a693))
+  (gr_text "JLCJLCJLCJLC" (at 103 170) (layer "B.SilkS") (tstamp ea8c03a2-3362-46ad-976e-9464136100a5)
+    (effects (font (size 1 1) (thickness 0.15)) (justify bottom))
+  )
   (gr_text "VCC" (at 112.25 110 90) (layer "F.SilkS") (tstamp 14e2ca55-0e68-4b87-8062-95f02c9a0394)
     (effects (font (face "Alte Haas Grotesk") (size 1 1) (thickness 0.15)) (justify right))
     (render_cache "VCC" 90
