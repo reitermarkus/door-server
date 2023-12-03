@@ -765,7 +765,7 @@
     (property "Voltage" "10V" (at 147.32 49.149 0)
       (effects (font (size 1.27 1.27)) (justify left))
     )
-    (property "LCSC Part" "C340768" (at 144.145 46.355 0)
+    (property "LCSC Part" "C8028" (at 144.145 46.355 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Part" "TPSD227M010R0100" (at 144.145 46.355 0)
