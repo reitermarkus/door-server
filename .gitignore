@@ -4,3 +4,9 @@ pcb/*
 !pcb/*.kicad_sch
 !pcb/*.kicad_pro
 !pcb/*.kicad_dru
+!pcb/door-adapter
+pcb/*/*
+!pcb/*/*.kicad_pcb
+!pcb/*/*.kicad_sch
+!pcb/*/*.kicad_pro
+!pcb/*/*.kicad_dru
