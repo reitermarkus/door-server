@@ -17,7 +17,7 @@ embedded-hal = "1.0.0-rc.2"
 embedded-hal-0 = { version = "0.2.7", package = "embedded-hal" }
 ws2812-spi = { version = "0.4.0", features = ["std"] }
 smart-leds = "0.3.0"
-ekey = "0.4.0"
+ekey = "0.6.0"
 
 [lib]
 name = "door_server"
