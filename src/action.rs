@@ -1,7 +1,6 @@
 use std::{
   any::Any,
   sync::{Arc, RwLock, Weak},
-  thread,
 };
 
 use uuid::Uuid;
@@ -73,11 +72,11 @@ macro_rules! action {
         let id = self.get_id();
         let door = self.door.clone();
 
-        thread::spawn(move || {
+        actix_rt::spawn(async move {
           let mut door = door.write().unwrap();
 
           #[allow(clippy::redundant_closure_call)]
-          $method(&mut *door);
+          $method(&mut *door).await;
 
           let mut thing = thing.write().unwrap();
           thing.finish_action(action_name, id);
@@ -95,20 +94,22 @@ macro_rules! action {
   };
 }
 
-action!(UnlockAction, "unlock", |door: &mut Box<dyn Any + Send + Sync>| {
+async fn unlock_door(door: &mut Box<dyn Any + Send + Sync>) {
   if let Some(ref mut door) = door.downcast_mut::<Door>() {
-    door.open();
+    door.open().await;
   } else if let Some(ref mut door) = door.downcast_mut::<GarageDoor>() {
-    door.open();
+    door.open().await;
   } else {
     unreachable!()
   }
-});
+}
+action!(UnlockAction, "unlock", unlock_door);
 
-action!(LockAction, "lock", |door: &mut Box<dyn Any + Send + Sync>| {
+async fn lock_door(door: &mut Box<dyn Any + Send + Sync>) {
   if let Some(ref mut door) = door.downcast_mut::<GarageDoor>() {
-    door.close();
+    door.close().await;
   } else {
     unreachable!()
   }
-});
+}
+action!(LockAction, "lock", lock_door);

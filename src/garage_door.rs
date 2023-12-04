@@ -1,69 +1,81 @@
-use std::{thread::sleep, time::Duration};
+use std::time::Duration;
 
-use rppal::gpio::{InputPin, OutputPin, Trigger};
+use actix_rt::time::sleep;
+use rppal::gpio::{Bias, InputPin, IoPin, Mode, Trigger};
 
 use super::*;
 
+#[derive(Debug)]
 pub struct GarageDoor {
-  s0: OutputPin,   // S0 - Button STOP (normally closed)
-  s2: OutputPin,   // S2 - Button OPEN (normally open)
-  s4: OutputPin,   // S4 - Button CLOSE (normally open)
-  input: InputPin, //      Door Contact
+  trigger_open: IoPin,  // S2 - Button OPEN (normally open)
+  trigger_stop: IoPin,  // S0 - Button STOP (normally closed)
+  trigger_close: IoPin, // S4 - Button CLOSE (normally open)
+  contact: InputPin,    //      Door Contact
 }
 
 impl GarageDoor {
-  pub fn new(mut s0: OutputPin, mut s2: OutputPin, mut s4: OutputPin, input: InputPin) -> Self {
-    s0.set_high();
-    s2.set_high();
-    s4.set_high();
+  pub fn new(mut trigger_open: IoPin, mut trigger_stop: IoPin, mut trigger_close: IoPin, contact: InputPin) -> Self {
+    trigger_open.set_high();
+    trigger_open.set_bias(Bias::PullUp);
+    trigger_stop.set_high();
+    trigger_stop.set_bias(Bias::PullUp);
+    trigger_close.set_high();
+    trigger_close.set_bias(Bias::PullUp);
 
-    Self { s0, s2, s4, input }
+    Self { trigger_stop, trigger_open, trigger_close, contact }
   }
 
-  pub fn open(&mut self) {
+  pub async fn open(&mut self) {
     if self.is_open() {
-      self.stop();
+      self.stop().await;
     }
 
-    self.s0.set_high();
-    self.s4.set_high();
+    self.trigger_open.set_mode(Mode::Output);
+    self.trigger_open.set_low();
+    sleep(Duration::from_millis(250)).await;
+    self.trigger_open.set_high();
 
-    self.s2.set_low();
-    sleep(Duration::from_millis(250));
-    self.s2.set_high();
+    self.trigger_open.set_mode(Mode::Input);
+    self.trigger_open.set_bias(Bias::PullUp);
   }
 
-  pub fn stop(&mut self) {
-    self.s2.set_high();
-    self.s4.set_high();
+  pub async fn stop(&mut self) {
+    self.trigger_stop.set_mode(Mode::Output);
+    self.trigger_stop.set_low();
+    sleep(Duration::from_millis(250)).await;
+    self.trigger_stop.set_high();
+    sleep(Duration::from_millis(500)).await;
 
-    self.s0.set_low();
-    sleep(Duration::from_millis(250));
-    self.s0.set_high();
-    sleep(Duration::from_millis(500));
+    self.trigger_stop.set_mode(Mode::Input);
+    self.trigger_stop.set_bias(Bias::PullUp);
   }
 
-  pub fn close(&mut self) {
+  pub async fn close(&mut self) {
     if self.is_open() {
-      self.stop();
+      self.stop().await;
     }
 
-    self.s0.set_high();
-    self.s2.set_high();
+    self.trigger_close.set_mode(Mode::Output);
+    self.trigger_close.set_low();
+    sleep(Duration::from_millis(250)).await;
+    self.trigger_close.set_high();
 
-    self.s4.set_low();
-    sleep(Duration::from_millis(250));
-    self.s4.set_high();
+    self.trigger_close.set_mode(Mode::Input);
+    self.trigger_close.set_bias(Bias::PullUp);
   }
 }
 
 impl StatefulDoor for GarageDoor {
-  fn on_change(&mut self, callback: impl FnMut(bool) + Send + 'static) {
-    self.input.set_async_interrupt(Trigger::Both, on_change_debounce(callback)).unwrap()
+  fn on_change<C, F>(&mut self, callback: C)
+  where
+    F: Future,
+    C: (FnMut(bool) -> F) + Send + 'static,
+  {
+    self.contact.set_async_interrupt(Trigger::Both, on_change_debounce(callback)).unwrap()
   }
 
   fn is_closed(&self) -> bool {
-    self.input.is_low()
+    self.contact.is_low()
   }
 
   fn is_open(&self) -> bool {

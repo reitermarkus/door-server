@@ -1,13 +1,16 @@
 use std::{
+  future::Future,
   sync::{
     atomic::{AtomicUsize, Ordering},
     Arc, Mutex,
   },
-  thread::{self, sleep},
+  thread,
   time::Duration,
 };
 
+use actix_rt::time::sleep;
 use rppal::gpio::Level;
+use tokio::runtime::Runtime;
 
 mod board;
 pub use board::Board;
@@ -24,7 +27,10 @@ mod waveshare_relay;
 pub use waveshare_relay::WaveshareRelay;
 
 pub trait StatefulDoor {
-  fn on_change(&mut self, callback: impl FnMut(bool) + Send + 'static);
+  fn on_change<C, F>(&mut self, callback: C)
+  where
+    F: Future,
+    C: (FnMut(bool) -> F) + Send + 'static;
 
   fn is_closed(&self) -> bool;
 
@@ -32,7 +38,11 @@ pub trait StatefulDoor {
 }
 
 impl<T: StatefulDoor> StatefulDoor for &mut T {
-  fn on_change(&mut self, callback: impl FnMut(bool) + Send + 'static) {
+  fn on_change<C, F>(&mut self, callback: C)
+  where
+    F: Future,
+    C: (FnMut(bool) -> F) + Send + 'static,
+  {
     (**self).on_change(callback)
   }
 
@@ -45,7 +55,11 @@ impl<T: StatefulDoor> StatefulDoor for &mut T {
   }
 }
 
-pub fn on_change_debounce(callback: impl FnMut(bool) + Send + 'static) -> impl FnMut(Level) + Send + 'static {
+pub fn on_change_debounce<C, F>(callback: C) -> impl FnMut(Level) + Send + 'static
+where
+  F: Future,
+  C: (FnMut(bool) -> F) + Send + 'static,
+{
   let last_value = Arc::new(AtomicUsize::new(0));
   let callback = Arc::new(Mutex::new(callback));
 
@@ -56,13 +70,16 @@ pub fn on_change_debounce(callback: impl FnMut(bool) + Send + 'static) -> impl F
     let expected_value = last_value.fetch_add(1, Ordering::SeqCst).wrapping_add(1);
 
     thread::spawn(move || {
-      sleep(Duration::from_millis(100));
+      let rt: Runtime = Runtime::new().unwrap();
+      rt.block_on(async move {
+        sleep(Duration::from_millis(50)).await;
 
-      let current_value = last_value.load(Ordering::SeqCst);
-      if current_value == expected_value {
-        let closed = level == Level::Low;
-        (callback.lock().unwrap())(closed);
-      }
+        let current_value = last_value.load(Ordering::SeqCst);
+        if current_value == expected_value {
+          let closed = level == Level::Low;
+          (callback.lock().unwrap())(closed).await;
+        }
+      })
     });
   }
 }
