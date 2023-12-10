@@ -1534,8 +1534,9 @@ dependencies = [
 
 [[package]]
 name = "rppal"
-version = "0.15.0"
-source = "git+https://github.com/golemparts/rppal#c237b481bf763f76b10328dfbd4edf543e9907f6"
+version = "0.16.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "23aff72e177b0e0b0e0801bbe9f41de2abafd396dfb69af9c602ffba8c2091b3"
 dependencies = [
  "embedded-hal 0.2.7",
  "embedded-hal 1.0.0-rc.2",
@@ -2347,3 +2348,8 @@ dependencies = [
  "cc",
  "pkg-config",
 ]
+
+[[patch.unused]]
+name = "rppal"
+version = "0.15.0"
+source = "git+https://github.com/golemparts/rppal#c237b481bf763f76b10328dfbd4edf543e9907f6"
