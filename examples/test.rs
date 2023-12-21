@@ -1,4 +1,4 @@
-use embedded_hal::delay::DelayUs;
+use embedded_hal::delay::DelayNs;
 use rppal::{
   gpio::{Gpio, Trigger},
   hal::Delay,
@@ -10,7 +10,7 @@ enum Dir {
   Out,
 }
 
-fn test_gpio(gpio: &mut Gpio, delay: &mut impl DelayUs, description: &str, n: u8, dir: Dir) {
+fn test_gpio(gpio: &mut Gpio, delay: &mut impl DelayNs, description: &str, n: u8, dir: Dir) {
   println!("Testing GPIO{n} ({description}):");
   let mut gpio = gpio.get(n).unwrap();
 
@@ -21,16 +21,16 @@ fn test_gpio(gpio: &mut Gpio, delay: &mut impl DelayUs, description: &str, n: u8
       println!("Waiting for GPIO{n} ({description}) to be pulled low.");
 
       while gpio.is_high() {
-        delay.delay_ms(10).unwrap();
+        delay.delay_ms(10);
       }
 
       println!("GPIO{n} was pulled low.");
 
       while gpio.is_low() {
-        delay.delay_ms(10).unwrap();
+        delay.delay_ms(10);
       }
 
-      delay.delay_ms(1000).unwrap();
+      delay.delay_ms(1000);
     },
     Dir::Out => {
       let mut gpio = gpio.into_output_high();
@@ -38,9 +38,9 @@ fn test_gpio(gpio: &mut Gpio, delay: &mut impl DelayUs, description: &str, n: u8
       println!("Toggling GPIO{n} ({description}).");
 
       gpio.set_low();
-      delay.delay_ms(1000).unwrap();
+      delay.delay_ms(1000);
       gpio.set_high();
-      delay.delay_ms(1000).unwrap();
+      delay.delay_ms(1000);
     },
   }
 }
