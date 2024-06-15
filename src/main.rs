@@ -239,7 +239,12 @@ async fn main() {
   doors.insert(cellar_door_thing.read().unwrap().get_id(), cellar_door.clone());
   things.push(cellar_door_thing.clone());
 
-  let mut garage_door = GarageDoor::new(board.garage_door_2_open, board.garage_door_2_stop, board.garage_door_2_close, board.garage_door_2_contact);
+  let mut garage_door = GarageDoor::new(
+    board.garage_door_2_open,
+    board.garage_door_2_stop,
+    board.garage_door_2_close,
+    board.garage_door_2_contact,
+  );
   let led_clone = led.clone();
   let ring_clone = ring.clone();
   let garage_door_thing = make_door_thing(&mut garage_door, "garage-door-1", "Garage Door", true, move |closed| {
