@@ -1,6 +1,7 @@
 use std::{
   any::Any,
   collections::HashMap,
+  env,
   future::Future,
   io,
   ops::DerefMut,
@@ -156,6 +157,8 @@ where
 #[actix_rt::main]
 async fn main() {
   env_logger::init();
+
+  let port = env::var("PORT").map(|s| s.parse::<u16>().expect("Port is invalid")).unwrap_or(8888);
 
   let gpio = Gpio::new().unwrap();
   let board = Board::new(gpio);
@@ -355,7 +358,6 @@ async fn main() {
   };
 
   let webthing_server = {
-    let port = 8888;
     let mut server = WebThingServer::new(
       ThingsType::Multiple(things, "DoorServer".to_owned()),
       Some(port),
