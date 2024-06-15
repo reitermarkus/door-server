@@ -1,5 +1,22 @@
 [build]
-target = "arm-unknown-linux-gnueabihf"
+target = [
+  "arm-unknown-linux-gnueabihf",
+  "aarch64-unknown-linux-gnu",
+  "arm-unknown-linux-musleabihf",
+  "aarch64-unknown-linux-musl",
+]
 
 [target.arm-unknown-linux-gnueabihf]
 runner = ".cargo/runner"
+
+[target.aarch64-unknown-linux-gnu]
+runner = ".cargo/runner"
+linker = "aarch64-linux-gnu-gcc"
+
+[target.arm-unknown-linux-musleabihf]
+runner = ".cargo/runner"
+linker = "arm-unknown-linux-musleabihf-gcc"
+
+[target.aarch64-unknown-linux-musl]
+runner = ".cargo/runner"
+linker = "aarch64-linux-musl-gcc"
