@@ -2,7 +2,7 @@ use std::{
   future::Future,
   sync::{
     atomic::{AtomicUsize, Ordering},
-    Arc, Mutex,
+    Arc,
   },
   thread,
   time::Duration,
@@ -10,7 +10,7 @@ use std::{
 
 use actix_rt::time::sleep;
 use rppal::gpio::Level;
-use tokio::runtime::Runtime;
+use tokio::{runtime::Runtime, sync::Mutex};
 
 mod board;
 pub use board::Board;
@@ -77,7 +77,7 @@ where
         let current_value = last_value.load(Ordering::SeqCst);
         if current_value == expected_value {
           let closed = level == Level::Low;
-          (callback.lock().unwrap())(closed).await;
+          callback.lock().await(closed).await;
         }
       })
     });

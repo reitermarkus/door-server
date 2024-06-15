@@ -8,6 +8,7 @@ pub struct RgbRing {
 }
 
 impl RgbRing {
+  #[allow(clippy::new_without_default)]
   pub fn new() -> Self {
     // On Raspberry Pi, `core_freq=250` must be set in `/boot/config.txt` in order to have a stable SPI frequency.
     let spi_freq = 800_000 * 3;

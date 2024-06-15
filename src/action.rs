@@ -12,11 +12,14 @@ macro_rules! action {
   ($ty:ident, $action_name:expr, $method:expr) => {
     pub struct $ty {
       action: BaseAction,
-      door: Arc<RwLock<Box<dyn Any + Send + Sync>>>,
+      door: Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>>,
     }
 
     impl $ty {
-      pub fn new(thing: Weak<RwLock<Box<dyn Thing>>>, door: Arc<RwLock<Box<dyn Any + Send + Sync>>>) -> Self {
+      pub fn new(
+        thing: Weak<RwLock<Box<dyn Thing>>>,
+        door: Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>>,
+      ) -> Self {
         Self { action: BaseAction::new(Uuid::new_v4().to_string(), $action_name.to_owned(), None, thing), door }
       }
     }
@@ -73,7 +76,7 @@ macro_rules! action {
         let door = self.door.clone();
 
         actix_rt::spawn(async move {
-          let mut door = door.write().unwrap();
+          let mut door = door.write().await;
 
           #[allow(clippy::redundant_closure_call)]
           $method(&mut *door).await;

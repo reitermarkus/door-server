@@ -6,12 +6,12 @@ use std::{
   io,
   ops::DerefMut,
   process, str,
-  sync::{Arc, Mutex, RwLock, Weak},
+  sync::{Arc, RwLock, Weak},
 };
 
 use rppal::gpio::{Gpio, Trigger};
 use serde_json::json;
-use tokio::net::UdpSocket;
+use tokio::{net::UdpSocket, sync::Mutex};
 use webthing::{
   server::ActionGenerator, Action, BaseEvent, BaseProperty, BaseThing, Thing, ThingsType, WebThingServer,
 };
@@ -24,7 +24,7 @@ use action::{LockAction, UnlockAction};
 use door_server::{led::closed_to_color, Board};
 
 struct Generator {
-  doors: HashMap<String, Arc<RwLock<Box<dyn Any + Send + Sync>>>>,
+  doors: HashMap<String, Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>>>,
 }
 
 impl ActionGenerator for Generator {
@@ -178,7 +178,7 @@ async fn main() {
     let ring = ring_clone.clone();
 
     async move {
-      let mut ring = ring.lock().unwrap();
+      let mut ring = ring.lock().await;
       ring.set_top_left(closed_to_color(closed));
       ring.render();
     }
@@ -196,7 +196,8 @@ async fn main() {
     .to_owned(),
   );
 
-  let main_door: Arc<RwLock<Box<dyn Any + Send + Sync>>> = Arc::new(RwLock::new(Box::new(main_door)));
+  let main_door: Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>> =
+    Arc::new(tokio::sync::RwLock::new(Box::new(main_door)));
 
   doors.insert(main_door_thing.read().unwrap().get_id(), main_door.clone());
   things.push(main_door_thing.clone());
@@ -228,13 +229,14 @@ async fn main() {
     let ring = ring_clone.clone();
 
     async move {
-      let mut ring = ring.lock().unwrap();
+      let mut ring = ring.lock().await;
       ring.set_bottom_right(closed_to_color(closed));
       ring.render();
     }
   })
   .await;
-  let cellar_door: Arc<RwLock<Box<dyn Any + Send + Sync>>> = Arc::new(RwLock::new(Box::new(cellar_door)));
+  let cellar_door: Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>> =
+    Arc::new(tokio::sync::RwLock::new(Box::new(cellar_door)));
 
   doors.insert(cellar_door_thing.read().unwrap().get_id(), cellar_door.clone());
   things.push(cellar_door_thing.clone());
@@ -252,11 +254,13 @@ async fn main() {
     let ring = ring_clone.clone();
 
     async move {
-      let mut ring = ring.lock().unwrap();
-      ring.set_top_right(closed_to_color(closed));
-      ring.render();
+      {
+        let mut ring = ring.lock().await;
+        ring.set_top_right(closed_to_color(closed));
+        ring.render();
+      }
 
-      let mut led = led.lock().unwrap();
+      let mut led = led.lock().await;
 
       if closed {
         led.0.set_low();
@@ -269,7 +273,8 @@ async fn main() {
     }
   })
   .await;
-  let garage_door: Arc<RwLock<Box<dyn Any + Send + Sync>>> = Arc::new(RwLock::new(Box::new(garage_door)));
+  let garage_door: Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>> =
+    Arc::new(tokio::sync::RwLock::new(Box::new(garage_door)));
 
   let garage_door_clone = garage_door.clone();
   let led_clone = led.clone();
@@ -281,7 +286,7 @@ async fn main() {
         let garage_door = garage_door_clone.clone();
 
         async move {
-          let mut led = led.lock().unwrap();
+          let mut led = led.lock().await;
 
           if closed {
             log::info!("Garage door button pressed.");
@@ -290,7 +295,7 @@ async fn main() {
             led.1.set_high();
             led.2.set_high();
 
-            let mut garage_door = garage_door.write().unwrap();
+            let mut garage_door = garage_door.write().await;
             let garage_door = garage_door.downcast_mut::<GarageDoor>().unwrap();
 
             if garage_door.is_open() {
