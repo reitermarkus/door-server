@@ -1,0 +1,91 @@
+- name: Set up Raspberry Pi
+  hosts: raspberry_pi
+  gather_facts: false
+  become: yes
+  tasks:
+    - name: Install Python
+      ansible.builtin.raw: apk add python3
+    - name: Make boot partition writeable
+      ansible.posix.mount:
+        path: /media/mmcblk0p1
+        opts: rw
+        state: remounted
+      register: remount_boot_partition
+    - name: Make boot partition writeable
+      ansible.posix.mount:
+        path: /media/mmcblk0p1
+        opts: rw
+        state: remounted
+    - name: Set core frequency
+      include_role:
+        name: infothrill.rpi_boot_config
+      vars:
+        rpi_boot_config_file: /media/mmcblk0p1/usercfg.txt
+        boot_config:
+          core_freq: '250'
+          dtparam=spi: 'on'
+    - name: Make boot partition read-only again
+      ansible.posix.mount:
+        path: /media/mmcblk0p1
+        opts: ro
+        state: remounted
+      when: remount_boot_partition.changed
+    - name: Build program
+      local_action: command cargo install --bin door-server --path . --root target
+      become: no
+    - name: Install program
+      copy:
+        src: target/bin/door-server
+        dest: /usr/local/bin/door-server
+        mode: 0755
+    - name: Create configuration directory
+      ansible.builtin.file:
+        path: /usr/local/etc/conf.d
+        state: directory
+    - name: Configure service
+      copy:
+        content: |
+          RUST_LOG=info
+          PORT=8888
+        dest: /usr/local/etc/conf.d/door-server
+        mode: 0644
+    - name: Create service directory
+      ansible.builtin.file:
+        path: /usr/local/etc/init.d
+        state: directory
+    - name: Install service
+      copy:
+        content: |
+          #!/sbin/openrc-run
+
+          export RUST_LOG="${RUST_LOG}"
+          export PORT="${PORT}"
+
+          name="Door Server"
+          pidfile=/run/door-server.pid
+          command="/usr/local/bin/door-server"
+          command_background=true
+          required_files="/dev/spidev0.0"
+          output_log="/var/log/door-server.log"
+          error_log="/var/log/door-server.log"
+
+          depend() {
+            use net dns
+            need dev
+            after hwdrivers
+          }
+        dest: /usr/local/etc/init.d/door-server
+        mode: 0755
+    - name: Enable service
+      ansible.builtin.service:
+        name: door-server
+        enabled: true
+        state: started
+    - name: Commit changes
+      community.general.lbu:
+        commit: true
+        include:
+          - /usr/local/bin/door-server
+          - /usr/local/etc/conf.d/door-server
+          - /usr/local/etc/init.d/door-server
+          - /etc/runlevels/default/door-server
