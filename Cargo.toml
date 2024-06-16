@@ -15,7 +15,7 @@ actix-rt = "2.10.0"
 uuid = "1"
 embedded-hal = "1"
 ws2812-spi = { version = "0.4.0", features = ["std"] }
-smart-leds = "0.3.0"
+smart-leds = "0.4.0"
 ekey = "0.6.0"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
 
