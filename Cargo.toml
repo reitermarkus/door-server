@@ -8,7 +8,7 @@ publish = false
 [dependencies]
 env_logger = "0.11"
 log = "0.4"
-rppal = { version = "0.18", features = ["hal"] }
+rppal = { version = "0.22", features = ["hal"] }
 serde_json = "1"
 webthing = "0.15.2"
 actix-rt = "2.10.0"
