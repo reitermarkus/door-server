@@ -611,6 +611,7 @@ version = "0.1.0"
 dependencies = [
  "actix-rt",
  "ekey",
+ "embedded-hal",
  "env_logger",
  "log",
  "rppal",
