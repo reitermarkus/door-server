@@ -1,5 +1,5 @@
 use rppal::spi::{Bus, Mode as SpiMode, SlaveSelect, Spi};
-use smart_leds::{SmartLedsWrite, RGB8};
+use smart_leds::{RGB8, SmartLedsWrite};
 use ws2812_spi::hosted::Ws2812;
 
 pub struct RgbRing {
@@ -41,9 +41,5 @@ impl RgbRing {
 }
 
 pub fn closed_to_color(closed: bool) -> RGB8 {
-  if closed {
-    RGB8 { r: 0x00, g: 0x0f, b: 0x01 }
-  } else {
-    RGB8 { r: 0x14, g: 0x00, b: 0x00 }
-  }
+  if closed { RGB8 { r: 0x00, g: 0x0f, b: 0x01 } } else { RGB8 { r: 0x14, g: 0x00, b: 0x00 } }
 }

@@ -1,15 +1,6 @@
-use std::{
-  future::Future,
-  sync::{
-    atomic::{AtomicUsize, Ordering},
-    Arc,
-  },
-  thread,
-  time::Duration,
-};
+use std::{future::Future, sync::Arc, thread};
 
-use actix_rt::time::sleep;
-use rppal::gpio::Level;
+use rppal::gpio::{Event, Trigger};
 use tokio::{runtime::Runtime, sync::Mutex};
 
 mod board;
@@ -55,30 +46,21 @@ impl<T: StatefulDoor> StatefulDoor for &mut T {
   }
 }
 
-pub fn on_change_debounce<C, F>(callback: C) -> impl FnMut(Level) + Send + 'static
+pub fn on_change_async<C, F>(callback: C) -> impl FnMut(Event) + Send + 'static
 where
   F: Future,
   C: (FnMut(bool) -> F) + Send + 'static,
 {
-  let last_value = Arc::new(AtomicUsize::new(0));
   let callback = Arc::new(Mutex::new(callback));
 
-  move |level: Level| {
-    let last_value = last_value.clone();
+  move |event: Event| {
     let callback = callback.clone();
-
-    let expected_value = last_value.fetch_add(1, Ordering::SeqCst).wrapping_add(1);
 
     thread::spawn(move || {
       let rt: Runtime = Runtime::new().unwrap();
       rt.block_on(async move {
-        sleep(Duration::from_millis(50)).await;
-
-        let current_value = last_value.load(Ordering::SeqCst);
-        if current_value == expected_value {
-          let closed = level == Level::Low;
-          callback.lock().await(closed).await;
-        }
+        let closed = event.trigger == Trigger::FallingEdge;
+        callback.lock().await(closed).await;
       })
     });
   }

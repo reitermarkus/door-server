@@ -71,7 +71,7 @@ impl StatefulDoor for GarageDoor {
     F: Future,
     C: (FnMut(bool) -> F) + Send + 'static,
   {
-    self.contact.set_async_interrupt(Trigger::Both, on_change_debounce(callback)).unwrap()
+    self.contact.set_async_interrupt(Trigger::Both, Some(Duration::from_millis(50)), on_change_async(callback)).unwrap()
   }
 
   fn is_closed(&self) -> bool {

@@ -5,23 +5,24 @@ use std::{
   future::Future,
   io,
   ops::DerefMut,
-  process, str,
+  str,
   sync::{Arc, RwLock, Weak},
+  time::Duration,
 };
 
 use rppal::gpio::{Gpio, Trigger};
 use serde_json::json;
-use tokio::{net::UdpSocket, sync::Mutex};
+use tokio::{net::UdpSocket, signal, sync::Mutex};
 use webthing::{
-  server::ActionGenerator, Action, BaseEvent, BaseProperty, BaseThing, Thing, ThingsType, WebThingServer,
+  Action, BaseEvent, BaseProperty, BaseThing, Thing, ThingsType, WebThingServer, server::ActionGenerator,
 };
 
-use door_server::{on_change_debounce, Door, GarageDoor, StatefulDoor};
+use door_server::{Door, GarageDoor, StatefulDoor, on_change_async};
 
 mod action;
 use action::{LockAction, UnlockAction};
 
-use door_server::{led::closed_to_color, Board};
+use door_server::{Board, led::closed_to_color};
 
 struct Generator {
   doors: HashMap<String, Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>>>,
@@ -206,7 +207,8 @@ async fn main() {
   door_bell_button
     .set_async_interrupt(
       Trigger::Both,
-      on_change_debounce(move |closed| {
+      Some(Duration::from_millis(50)),
+      on_change_async(move |closed| {
         let main_door_thing = main_door_thing_clone.clone();
 
         async move {
@@ -281,7 +283,8 @@ async fn main() {
   garage_door_button
     .set_async_interrupt(
       Trigger::Both,
-      on_change_debounce(move |closed| {
+      Some(Duration::from_millis(50)),
+      on_change_async(move |closed| {
         let led = led_clone.clone();
         let garage_door = garage_door_clone.clone();
 
@@ -382,8 +385,11 @@ async fn main() {
     server.start(None)
   };
 
-  tokio::try_join!(ekey_receiver, webthing_server).unwrap_or_else(|err: io::Error| {
-    log::error!("{}", err);
-    process::exit(1);
-  });
+  let signal = async { signal::ctrl_c().await.unwrap() };
+
+  tokio::select! {
+    _ = signal => (),
+    _ = ekey_receiver => (),
+    _ = webthing_server => (),
+  }
 }
