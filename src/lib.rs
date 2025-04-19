@@ -14,9 +14,6 @@ pub use garage_door::GarageDoor;
 
 pub mod led;
 
-mod waveshare_relay;
-pub use waveshare_relay::WaveshareRelay;
-
 pub trait StatefulDoor {
   fn on_change<C, F>(&mut self, callback: C)
   where
