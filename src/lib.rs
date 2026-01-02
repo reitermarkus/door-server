@@ -9,8 +9,11 @@ pub use board::Board;
 mod door;
 pub use door::Door;
 
+mod door_bell;
+pub use door_bell::Button;
+
 mod garage_door;
-pub use garage_door::GarageDoor;
+pub use garage_door::{GarageDoor, GarageDoorState};
 
 pub mod led;
 

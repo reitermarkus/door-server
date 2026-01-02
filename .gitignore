@@ -10,3 +10,4 @@ pcb/*/*
 !pcb/*/*.kicad_sch
 !pcb/*/*.kicad_pro
 !pcb/*/*.kicad_dru
+mise.local.toml
