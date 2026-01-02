@@ -10,4 +10,4 @@ remote_path="/tmp/${binary_name}"
 
 scp "${1}" "${ssh_host}:${remote_path}"
 ssh "${ssh_host}" "rc-service '${binary_name}' stop" || true
-ssh -t "${ssh_host}" "RUST_LOG='${RUST_LOG-}' '${remote_path}'"
+ssh -t "${ssh_host}" "RUST_LOG='${RUST_LOG-}' ESPHOME_ENCRYPTION_KEY='${ESPHOME_ENCRYPTION_KEY:-}' '${remote_path}'"

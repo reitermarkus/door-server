@@ -21,6 +21,8 @@ ws2812-spi = { version = "0.5.0", features = ["std"] }
 smart-leds = "0.4.0"
 ekey = "0.6.0"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
+esphome-native-api = "2.0.3"
+mac_address = "1.1.8"
 
 [[example]]
 name = "test"
@@ -33,4 +35,4 @@ path = "src/lib.rs"
 
 [[bin]]
 name = "door-server"
-path = "src/main.rs"
+path = "src/bin/door_server/main.rs"
