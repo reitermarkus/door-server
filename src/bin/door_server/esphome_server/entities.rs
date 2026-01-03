@@ -48,6 +48,22 @@ pub fn entities() -> HashMap<u32, ProtoMessage> {
 
   entity_map.insert(
     key,
+    ProtoMessage::ListEntitiesEventResponse(ListEntitiesEventResponse {
+      device_id,
+      key,
+      object_id: "main_door".into(),
+      name: "Main Door".into(),
+      device_class: "".into(),
+      disabled_by_default: false,
+      icon: "mdi:fingerprint".into(),
+      entity_category: EntityCategory::None as i32,
+      event_types: vec!["open".into()],
+    }),
+  );
+  key += 1;
+
+  entity_map.insert(
+    key,
     ProtoMessage::ListEntitiesLockResponse(ListEntitiesLockResponse {
       device_id,
       key,
@@ -82,6 +98,22 @@ pub fn entities() -> HashMap<u32, ProtoMessage> {
 
   entity_map.insert(
     key,
+    ProtoMessage::ListEntitiesEventResponse(ListEntitiesEventResponse {
+      device_id,
+      key,
+      object_id: "cellar_door".into(),
+      name: "Cellar Door".into(),
+      device_class: "".into(),
+      disabled_by_default: false,
+      icon: "mdi:fingerprint".into(),
+      entity_category: EntityCategory::None as i32,
+      event_types: vec!["open".into()],
+    }),
+  );
+  key += 1;
+
+  entity_map.insert(
+    key,
     ProtoMessage::ListEntitiesLockResponse(ListEntitiesLockResponse {
       device_id,
       key,
@@ -110,6 +142,22 @@ pub fn entities() -> HashMap<u32, ProtoMessage> {
       icon: "mdi:garage-variant".into(),
       entity_category: EntityCategory::None as i32,
       is_status_binary_sensor: false,
+    }),
+  );
+  key += 1;
+
+  entity_map.insert(
+    key,
+    ProtoMessage::ListEntitiesEventResponse(ListEntitiesEventResponse {
+      device_id,
+      key,
+      object_id: "garage_door".into(),
+      name: "Garage Door".into(),
+      device_class: "".into(),
+      disabled_by_default: false,
+      icon: "mdi:fingerprint".into(),
+      entity_category: EntityCategory::None as i32,
+      event_types: vec!["open".into()],
     }),
   );
   key += 1;

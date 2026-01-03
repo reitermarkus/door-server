@@ -1,9 +1,8 @@
 use std::time::Duration;
 
-use actix_rt::time::sleep;
 use esphome_native_api::proto::version_2025_12_1::CoverOperation;
 use rppal::gpio::{Bias, InputPin, IoPin, Mode, Trigger};
-use tokio::time::Instant;
+use tokio::time::{Instant, sleep, sleep_until};
 
 use super::*;
 
@@ -83,24 +82,34 @@ impl GarageDoor {
 
     self.trigger_open.set_mode(Mode::Output);
     self.trigger_open.set_low();
-    self.last_open_trigger = Some(Instant::now());
-    sleep(Duration::from_millis(250)).await;
+    let now = Instant::now();
+    self.last_open_trigger = Some(now);
+    sleep_until(now + Duration::from_millis(250)).await;
     self.trigger_open.set_high();
 
     self.trigger_open.set_mode(Mode::Input);
     self.trigger_open.set_bias(Bias::PullUp);
   }
 
+  pub fn handle_external_open(&mut self, delay: Duration) {
+    self.last_open_trigger = Instant::now().checked_add(delay);
+  }
+
   pub async fn stop(&mut self) {
     self.trigger_stop.set_mode(Mode::Output);
     self.trigger_stop.set_low();
-    self.last_stop_trigger = Some(Instant::now());
-    sleep(Duration::from_millis(250)).await;
+    let now = Instant::now();
+    self.last_stop_trigger = Some(now);
+    sleep_until(now + Duration::from_millis(250)).await;
     self.trigger_stop.set_high();
     sleep(Duration::from_millis(500)).await;
 
     self.trigger_stop.set_mode(Mode::Input);
     self.trigger_stop.set_bias(Bias::PullUp);
+  }
+
+  pub fn handle_external_stop(&mut self, delay: Duration) {
+    self.last_stop_trigger = Instant::now().checked_add(delay);
   }
 
   pub async fn close(&mut self) {
@@ -110,8 +119,9 @@ impl GarageDoor {
 
     self.trigger_close.set_mode(Mode::Output);
     self.trigger_close.set_low();
-    self.last_close_trigger = Some(Instant::now());
-    sleep(Duration::from_millis(250)).await;
+    let now = Instant::now();
+    self.last_close_trigger = Some(now);
+    sleep_until(now + Duration::from_millis(250)).await;
     self.trigger_close.set_high();
 
     self.trigger_close.set_mode(Mode::Input);
