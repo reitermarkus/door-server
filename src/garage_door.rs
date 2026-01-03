@@ -2,11 +2,14 @@ use std::time::Duration;
 
 use esphome_native_api::proto::version_2025_12_1::CoverOperation;
 use rppal::gpio::{Bias, InputPin, IoPin, Mode, Trigger};
-use tokio::time::{Instant, sleep, sleep_until};
+use tokio::{
+  sync::RwLock,
+  time::{Instant, sleep, sleep_until},
+};
 
 use super::*;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GarageDoorState {
   Open,
   Opening(f32),
@@ -17,116 +20,45 @@ pub enum GarageDoorState {
 
 impl GarageDoorState {
   pub fn is_stopped(&self) -> bool {
-    matches!(self, GarageDoorState::Open | GarageDoorState::Stopped(_) | GarageDoorState::Closed)
+    matches!(self, Self::Open | Self::Stopped(_) | Self::Closed)
+  }
+
+  pub fn is_closed(&self) -> bool {
+    matches!(self, Self::Closed)
   }
 
   pub fn position(&self) -> f32 {
     match self {
-      GarageDoorState::Open => 1.0,
-      GarageDoorState::Opening(pos) => *pos,
-      GarageDoorState::Stopped(pos) => *pos,
-      GarageDoorState::Closing(pos) => *pos,
-      GarageDoorState::Closed => 0.0,
+      Self::Open => 1.0,
+      Self::Opening(pos) => *pos,
+      Self::Stopped(pos) => *pos,
+      Self::Closing(pos) => *pos,
+      Self::Closed => 0.0,
     }
   }
 
   pub fn cover_operation(&self) -> CoverOperation {
     match self {
-      GarageDoorState::Open => CoverOperation::Idle,
-      GarageDoorState::Opening(_) => CoverOperation::IsOpening,
-      GarageDoorState::Stopped(_) => CoverOperation::Idle,
-      GarageDoorState::Closing(_) => CoverOperation::IsClosing,
-      GarageDoorState::Closed => CoverOperation::Idle,
+      Self::Open => CoverOperation::Idle,
+      Self::Opening(_) => CoverOperation::IsOpening,
+      Self::Stopped(_) => CoverOperation::Idle,
+      Self::Closing(_) => CoverOperation::IsClosing,
+      Self::Closed => CoverOperation::Idle,
     }
   }
 }
 
 #[derive(Debug)]
-pub struct GarageDoor {
-  trigger_open: IoPin, // S2 - Button OPEN (normally open)
+struct State {
+  contact: InputPin, // Door Contact
   last_open_trigger: Option<Instant>,
-  trigger_stop: IoPin, // S0 - Button STOP (normally closed)
   last_stop_trigger: Option<Instant>,
-  trigger_close: IoPin, // S4 - Button CLOSE (normally open)
   last_close_trigger: Option<Instant>,
-  contact: InputPin, //      Door Contact
 }
 
-impl GarageDoor {
-  const OPEN_DURATION: Duration = Duration::from_millis(14_400);
-  const CLOSE_DURATION: Duration = Duration::from_millis(18_400);
-
-  pub fn new(mut trigger_open: IoPin, mut trigger_stop: IoPin, mut trigger_close: IoPin, contact: InputPin) -> Self {
-    trigger_open.set_high();
-    trigger_open.set_bias(Bias::PullUp);
-    trigger_stop.set_high();
-    trigger_stop.set_bias(Bias::PullUp);
-    trigger_close.set_high();
-    trigger_close.set_bias(Bias::PullUp);
-
-    Self {
-      trigger_open,
-      last_open_trigger: None,
-      trigger_stop,
-      last_stop_trigger: None,
-      trigger_close,
-      last_close_trigger: None,
-      contact,
-    }
-  }
-
-  pub async fn open(&mut self) {
-    if self.is_open() {
-      self.stop().await;
-    }
-
-    self.trigger_open.set_mode(Mode::Output);
-    self.trigger_open.set_low();
-    let now = Instant::now();
-    self.last_open_trigger = Some(now);
-    sleep_until(now + Duration::from_millis(250)).await;
-    self.trigger_open.set_high();
-
-    self.trigger_open.set_mode(Mode::Input);
-    self.trigger_open.set_bias(Bias::PullUp);
-  }
-
-  pub fn handle_external_open(&mut self, delay: Duration) {
-    self.last_open_trigger = Instant::now().checked_add(delay);
-  }
-
-  pub async fn stop(&mut self) {
-    self.trigger_stop.set_mode(Mode::Output);
-    self.trigger_stop.set_low();
-    let now = Instant::now();
-    self.last_stop_trigger = Some(now);
-    sleep_until(now + Duration::from_millis(250)).await;
-    self.trigger_stop.set_high();
-    sleep(Duration::from_millis(500)).await;
-
-    self.trigger_stop.set_mode(Mode::Input);
-    self.trigger_stop.set_bias(Bias::PullUp);
-  }
-
-  pub fn handle_external_stop(&mut self, delay: Duration) {
-    self.last_stop_trigger = Instant::now().checked_add(delay);
-  }
-
-  pub async fn close(&mut self) {
-    if self.is_open() {
-      self.stop().await;
-    }
-
-    self.trigger_close.set_mode(Mode::Output);
-    self.trigger_close.set_low();
-    let now = Instant::now();
-    self.last_close_trigger = Some(now);
-    sleep_until(now + Duration::from_millis(250)).await;
-    self.trigger_close.set_high();
-
-    self.trigger_close.set_mode(Mode::Input);
-    self.trigger_close.set_bias(Bias::PullUp);
-  }
+impl State {
+  const OPEN_DURATION: Duration = Duration::from_millis(14_700);
+  const CLOSE_DURATION: Duration = Duration::from_millis(18_700);
 
   pub fn state(&self) -> GarageDoorState {
     if self.contact.is_low() {
@@ -188,22 +120,187 @@ impl GarageDoor {
       },
     }
   }
-}
 
-impl StatefulDoor for GarageDoor {
-  fn on_change<C, F>(&mut self, callback: C)
-  where
-    F: Future,
-    C: (FnMut(bool) -> F) + Send + 'static,
-  {
-    self.contact.set_async_interrupt(Trigger::Both, Some(Duration::from_millis(50)), on_change_async(callback)).unwrap()
-  }
-
-  fn is_closed(&self) -> bool {
+  pub fn is_closed(&self) -> bool {
     self.contact.is_low()
   }
+}
 
-  fn is_open(&self) -> bool {
-    !self.is_closed()
+#[derive(Debug)]
+pub struct GarageDoor<C> {
+  trigger_open: IoPin,  // S2 - Button OPEN (normally open)
+  trigger_stop: IoPin,  // S0 - Button STOP (normally closed)
+  trigger_close: IoPin, // S4 - Button CLOSE (normally open)
+  state: Arc<RwLock<State>>,
+  callback: Arc<Mutex<C>>,
+}
+
+impl<C, F> GarageDoor<C>
+where
+  F: Future + Send,
+  C: (FnMut(GarageDoorState) -> F) + Send + 'static,
+{
+  pub async fn new(
+    mut trigger_open: IoPin,
+    mut trigger_stop: IoPin,
+    mut trigger_close: IoPin,
+    contact: InputPin,
+    callback: C,
+  ) -> Self {
+    trigger_open.set_high();
+    trigger_open.set_bias(Bias::PullUp);
+    trigger_stop.set_high();
+    trigger_stop.set_bias(Bias::PullUp);
+    trigger_close.set_high();
+    trigger_close.set_bias(Bias::PullUp);
+
+    let callback = Arc::new(Mutex::new(callback));
+    let weak_callback = Arc::downgrade(&callback);
+
+    let state = Arc::new(RwLock::new(State {
+      contact,
+      last_open_trigger: None,
+      last_stop_trigger: None,
+      last_close_trigger: None,
+    }));
+    let weak_state = Arc::downgrade(&state);
+
+    state
+      .write()
+      .await
+      .contact
+      .set_async_interrupt(
+        Trigger::Both,
+        Some(Duration::from_millis(50)),
+        on_change_async(move |_closed| {
+          let weak_callback = weak_callback.clone();
+          let weak_state = weak_state.clone();
+
+          async move {
+            if let Some((callback, state)) = weak_callback.upgrade().zip(weak_state.upgrade()) {
+              let state = state.read().await.state();
+              callback.lock().await(state).await;
+            }
+          }
+        }),
+      )
+      .unwrap();
+
+    Self { trigger_open, trigger_stop, trigger_close, state, callback }
+  }
+
+  fn set_moving(&mut self, max_duration: Duration, target_state: GarageDoorState) {
+    let start_time = Instant::now();
+    let max_duration = max_duration.mul_f32(1.1) + Duration::from_secs(1);
+
+    let weak_callback = Arc::downgrade(&self.callback);
+    let weak_state = Arc::downgrade(&self.state);
+
+    tokio::spawn(async move {
+      while start_time.elapsed() <= max_duration {
+        sleep(Duration::from_millis(100)).await;
+
+        if let Some((callback, state)) = weak_callback.upgrade().zip(weak_state.upgrade()) {
+          let state = state.read().await.state();
+          callback.lock().await(state).await;
+
+          if state == target_state {
+            return;
+          }
+        } else {
+          return;
+        }
+      }
+
+      log::error!("Garage door movement did not finish in time.");
+    });
+  }
+
+  pub async fn open(&mut self) {
+    if !self.is_closed().await {
+      self.stop().await;
+    }
+
+    let state_clone = self.state.clone();
+    let state = &mut *state_clone.write().await;
+
+    self.trigger_open.set_mode(Mode::Output);
+    self.trigger_open.set_low();
+    let now = Instant::now();
+    state.last_open_trigger = Some(now);
+    self.callback.lock().await(state.state()).await;
+    self.set_moving(State::OPEN_DURATION, GarageDoorState::Open);
+    sleep_until(now + Duration::from_millis(250)).await;
+    self.trigger_open.set_high();
+
+    self.trigger_open.set_mode(Mode::Input);
+    self.trigger_open.set_bias(Bias::PullUp);
+  }
+
+  pub async fn handle_external_open(&mut self, delay: Duration) {
+    let state_clone = self.state.clone();
+    let state = &mut *state_clone.write().await;
+
+    state.last_open_trigger = Instant::now().checked_add(delay);
+    self.set_moving(State::OPEN_DURATION, GarageDoorState::Open);
+  }
+
+  pub async fn stop(&mut self) {
+    let state_clone = self.state.clone();
+    let state = &mut *state_clone.write().await;
+
+    self.trigger_stop.set_mode(Mode::Output);
+    self.trigger_stop.set_low();
+    let now = Instant::now();
+    state.last_stop_trigger = Some(now);
+    self.callback.lock().await(state.state()).await;
+    sleep_until(now + Duration::from_millis(250)).await;
+    self.trigger_stop.set_high();
+    sleep(Duration::from_millis(500)).await;
+    self.callback.lock().await(state.state()).await;
+
+    self.trigger_stop.set_mode(Mode::Input);
+    self.trigger_stop.set_bias(Bias::PullUp);
+  }
+
+  pub async fn handle_external_stop(&mut self, delay: Duration) {
+    let state_clone = self.state.clone();
+    let state = &mut *state_clone.write().await;
+
+    state.last_stop_trigger = Instant::now().checked_add(delay);
+    self.callback.lock().await(state.state()).await;
+  }
+
+  pub async fn close(&mut self) {
+    if !self.is_closed().await {
+      self.stop().await;
+    }
+
+    let state_clone = self.state.clone();
+    let state = &mut *state_clone.write().await;
+
+    self.trigger_close.set_mode(Mode::Output);
+    self.trigger_close.set_low();
+    let now = Instant::now();
+    state.last_close_trigger = Some(now);
+    self.callback.lock().await(state.state()).await;
+    self.set_moving(State::CLOSE_DURATION, GarageDoorState::Closed);
+    sleep_until(now + Duration::from_millis(250)).await;
+    self.trigger_close.set_high();
+
+    self.trigger_close.set_mode(Mode::Input);
+    self.trigger_close.set_bias(Bias::PullUp);
+  }
+
+  pub async fn force_update(&mut self) {
+    self.callback.lock().await(self.state.read().await.state()).await;
+  }
+
+  pub async fn state(&self) -> GarageDoorState {
+    self.state.read().await.state()
+  }
+
+  pub async fn is_closed(&self) -> bool {
+    self.state.read().await.is_closed()
   }
 }

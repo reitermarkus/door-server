@@ -7,7 +7,7 @@ use tokio::{
   sync::{Mutex, RwLock, broadcast},
 };
 
-use door_server::{Button, Door, GarageDoor, StatefulDoor};
+use door_server::{Button, Door, GarageDoor};
 
 mod ekey_receiver;
 mod esphome_server;
@@ -37,29 +37,19 @@ async fn main() {
     let event_tx = event_tx_clone.clone();
 
     async move {
-      log::info!("Main door callback: closed={closed}");
+      log::debug!("Main door: closed={closed}");
       let _ = event_tx.send(Event::DoorContact(DoorId::Main, closed));
     }
   })
   .await;
   let main_door = Arc::new(RwLock::new(main_door));
 
-  async fn set_on_change<OC, F>(mut door: impl StatefulDoor, mut on_change: OC)
-  where
-    F: Future + Send + Sync + 'static,
-    OC: (FnMut(bool) -> F) + Send + Sync + 'static,
-  {
-    // Initialize at start.
-    on_change(door.is_closed()).await;
-
-    door.on_change(on_change);
-  }
-
   let event_tx_clone = event_tx.clone();
   door_bell.on_change(move |pressed| {
     let event_tx = event_tx_clone.clone();
 
     async move {
+      log::debug!("Door bell: pressed={pressed}");
       if pressed {
         let _ = event_tx.send(Event::ButtonPress(ButtonId::DoorBell));
       }
@@ -71,27 +61,29 @@ async fn main() {
     let event_tx = event_tx_clone.clone();
 
     async move {
+      log::debug!("Cellar door: closed={closed}");
       let _ = event_tx.send(Event::DoorContact(DoorId::Cellar, closed));
     }
   })
   .await;
   let cellar_door = Arc::new(RwLock::new(cellar_door));
 
-  let mut garage_door = GarageDoor::new(
+  let event_tx_clone = event_tx.clone();
+  let garage_door = GarageDoor::new(
     board.garage_door_2_open,
     board.garage_door_2_stop,
     board.garage_door_2_close,
     board.garage_door_2_contact,
-  );
-  let event_tx_clone = event_tx.clone();
-  set_on_change(&mut garage_door, move |closed| {
-    let event_tx = event_tx_clone.clone();
+    move |state| {
+      let event_tx = event_tx_clone.clone();
 
-    async move {
-      let _ = event_tx.send(Event::DoorContact(DoorId::Garage, closed));
-      let _ = event_tx.send(Event::Refresh);
-    }
-  })
+      async move {
+        log::debug!("Garage door: state={:?}", state);
+        let _ = event_tx.send(Event::DoorContact(DoorId::Garage, state.is_closed()));
+        event_tx.send(Event::GarageDoorPosition(state)).unwrap();
+      }
+    },
+  )
   .await;
   let garage_door = Arc::new(RwLock::new(garage_door));
 
@@ -116,7 +108,7 @@ async fn main() {
 
         let mut garage_door = garage_door.write().await;
 
-        if garage_door.is_open() {
+        if !garage_door.is_closed().await {
           log::info!("Garage is open, closing.");
           garage_door.close().await
         } else {
@@ -154,15 +146,7 @@ async fn main() {
           cellar_door.force_update().await;
 
           let garage_door = &mut *garage_door.write().await;
-          event_tx.send(Event::DoorContact(DoorId::Garage, garage_door.is_closed())).unwrap();
-
-          let garage_door_state = garage_door.state();
-          log::info!("Garage door state: {:?}", garage_door_state);
-          event_tx.send(Event::GarageDoorPosition(garage_door_state)).unwrap();
-
-          if !garage_door_state.is_stopped() {
-            event_tx.send(Event::Refresh).unwrap();
-          }
+          garage_door.force_update().await;
         },
         Event::DoorCommand(DoorId::Main, DoorCommand::Unlock) => {
           let main_door = &mut *main_door.write().await;
@@ -180,15 +164,13 @@ async fn main() {
 
           let garage_door = &mut *garage_door.write().await;
 
-          event_tx.send(Event::DoorContact(DoorId::Garage, garage_door.is_closed())).unwrap();
+          event_tx.send(Event::DoorContact(DoorId::Garage, garage_door.is_closed().await)).unwrap();
 
           match command {
             GarageDoorCommand::Open => garage_door.open().await,
             GarageDoorCommand::Stop => garage_door.stop().await,
             GarageDoorCommand::Close => garage_door.close().await,
           }
-
-          event_tx.send(Event::Refresh).unwrap();
         },
         Event::ButtonPress(ButtonId::DoorBell) => {},
         Event::ButtonPress(ButtonId::GarageDoor) => {},
@@ -220,28 +202,24 @@ async fn main() {
         },
         Event::GarageDoorPosition(_) => {},
         Event::FingerScan(packet) => {
-          let value = serde_json::value::to_value(&packet).unwrap();
-
+          log::debug!("Finger scan: packet={packet:?}");
           match packet.finger_scanner_name() {
             "HT" => {
               if packet.action() == Action::Open {
                 let main_door = &mut *main_door.write().await;
                 main_door.handle_external_open().await;
-                event_tx.send(Event::Refresh).unwrap();
               }
             },
             "KT" => {
               if packet.action() == Action::Open {
                 let cellar_door = &mut *cellar_door.write().await;
                 cellar_door.handle_external_open().await;
-                event_tx.send(Event::Refresh).unwrap();
               }
             },
             "GT" => {
               if packet.action() == Action::Open {
                 let garage_door = &mut *garage_door.write().await;
-                garage_door.handle_external_open(Duration::from_secs(0)); // TODO: Delay.
-                event_tx.send(Event::Refresh).unwrap();
+                garage_door.handle_external_open(Duration::from_secs(0)).await; // TODO: Delay.
               }
             },
             "****" => {
@@ -250,22 +228,18 @@ async fn main() {
                   DigitalInput::Input1 => {
                     let main_door = &mut *main_door.write().await;
                     main_door.handle_external_open().await;
-                    event_tx.send(Event::Refresh).unwrap();
                   },
                   DigitalInput::Input2 => {
                     let cellar_door = &mut *cellar_door.write().await;
                     cellar_door.handle_external_open().await;
-                    event_tx.send(Event::Refresh).unwrap();
                   },
                   DigitalInput::Input3 => {
                     let garage_door = &mut *garage_door.write().await;
-                    garage_door.handle_external_open(Duration::from_secs(0)); // TODO: Delay.
-                    event_tx.send(Event::Refresh).unwrap();
+                    garage_door.handle_external_open(Duration::from_secs(0)).await; // TODO: Delay.
                   },
                   DigitalInput::Input4 => {
                     let garage_door = &mut *garage_door.write().await;
-                    garage_door.handle_external_stop(Duration::from_secs(0)); // TODO: Delay.
-                    event_tx.send(Event::Refresh).unwrap();
+                    garage_door.handle_external_stop(Duration::from_secs(0)).await; // TODO: Delay.
                   },
                 }
               }
