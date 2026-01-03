@@ -1,11 +1,13 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
+use ekey::Action;
 use esphome_native_api::{
   esphomeapi::EspHomeApi,
   parser::ProtoMessage,
   proto::version_2025_12_1::{
     BinarySensorStateResponse, CoverCommandRequest, CoverStateResponse, EventResponse, ListEntitiesDoneResponse,
-    ListEntitiesRequest, LockCommand, LockCommandRequest, LockState, LockStateResponse, SubscribeStatesRequest,
+    ListEntitiesRequest, LockCommand, LockCommandRequest, LockState, LockStateResponse,
+    SubscribeHomeAssistantStatesRequest, SubscribeHomeassistantServicesRequest, SubscribeStatesRequest,
   },
 };
 use mac_address::get_mac_address;
@@ -83,6 +85,12 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
         };
 
         match message {
+          ProtoMessage::SubscribeHomeassistantServicesRequest(SubscribeHomeassistantServicesRequest {}) => {
+            log::info!("SubscribeHomeassistantServicesRequest");
+          },
+          ProtoMessage::SubscribeHomeAssistantStatesRequest(SubscribeHomeAssistantStatesRequest {}) => {
+            log::info!("SubscribeHomeAssistantStatesRequest");
+          },
           ProtoMessage::ListEntitiesRequest(ListEntitiesRequest {}) => {
             log::info!("ListEntitiesRequest");
 
@@ -112,6 +120,7 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .unwrap();
                   },
                   Event::DoorContact(DoorId::Main, closed) => {
+                    log::info!("Main door: closed={closed}");
                     tx.send(ProtoMessage::BinarySensorStateResponse(BinarySensorStateResponse {
                       device_id: 0,
                       key: 1,
@@ -122,16 +131,25 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .unwrap();
                     tx.send(ProtoMessage::LockStateResponse(LockStateResponse {
                       device_id: 0,
-                      key: 2,
+                      key: 3,
                       state: if closed { LockState::Locked } else { LockState::Unlocked } as i32,
                     }))
                     .await
                     .unwrap();
                   },
+                  Event::FingerScan(event) if event.finger_scanner_name() == "HT" && event.action() == Action::Open => {
+                    tx.send(ProtoMessage::EventResponse(EventResponse {
+                      device_id: 0,
+                      key: 2, // TOOD: Get from map.
+                      event_type: "open".into(),
+                    }))
+                    .await
+                    .unwrap()
+                  },
                   Event::DoorContact(DoorId::Cellar, closed) => {
                     tx.send(ProtoMessage::BinarySensorStateResponse(BinarySensorStateResponse {
                       device_id: 0,
-                      key: 3,
+                      key: 4,
                       state: !closed,
                       missing_state: false,
                     }))
@@ -139,26 +157,44 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .unwrap();
                     tx.send(ProtoMessage::LockStateResponse(LockStateResponse {
                       device_id: 0,
-                      key: 4,
+                      key: 6,
                       state: if closed { LockState::Locked } else { LockState::Unlocked } as i32,
                     }))
                     .await
                     .unwrap();
                   },
+                  Event::FingerScan(event) if event.finger_scanner_name() == "KT" && event.action() == Action::Open => {
+                    tx.send(ProtoMessage::EventResponse(EventResponse {
+                      device_id: 0,
+                      key: 5, // TOOD: Get from map.
+                      event_type: "open".into(),
+                    }))
+                    .await
+                    .unwrap()
+                  },
                   Event::DoorContact(DoorId::Garage, closed) => {
                     tx.send(ProtoMessage::BinarySensorStateResponse(BinarySensorStateResponse {
                       device_id: 0,
-                      key: 5,
+                      key: 7,
                       state: !closed,
                       missing_state: false,
                     }))
                     .await
                     .unwrap();
                   },
+                  Event::FingerScan(event) if event.finger_scanner_name() == "GT" && event.action() == Action::Open => {
+                    tx.send(ProtoMessage::EventResponse(EventResponse {
+                      device_id: 0,
+                      key: 8, // TOOD: Get from map.
+                      event_type: "open".into(),
+                    }))
+                    .await
+                    .unwrap()
+                  },
                   Event::GarageDoorPosition(state) => {
                     tx.send(ProtoMessage::CoverStateResponse(CoverStateResponse {
                       device_id: 0,
-                      key: 6,
+                      key: 9,
                       #[allow(deprecated)]
                       legacy_state: 0,
                       position: state.position(),
@@ -168,6 +204,7 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .await
                     .unwrap();
                   },
+
                   _ => (),
                 }
               }
@@ -176,11 +213,11 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
           ProtoMessage::LockCommandRequest(LockCommandRequest { device_id: 0, key, command, .. }) => {
             match LockCommand::try_from(command) {
               Ok(LockCommand::LockUnlock | LockCommand::LockOpen) => {
-                if key == 2 {
+                if key == 3 {
                   event_tx.send(Event::DoorCommand(DoorId::Main, DoorCommand::Unlock)).unwrap();
                 }
 
-                if key == 4 {
+                if key == 6 {
                   event_tx.send(Event::DoorCommand(DoorId::Cellar, DoorCommand::Unlock)).unwrap();
                 }
 

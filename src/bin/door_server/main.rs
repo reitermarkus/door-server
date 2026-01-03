@@ -1,9 +1,10 @@
-use std::{any::Any, sync::Arc};
+use std::{sync::Arc, time::Duration};
 
+use ekey::{Action, multi::DigitalInput};
 use rppal::gpio::Gpio;
 use tokio::{
   signal::unix::{SignalKind, signal},
-  sync::{Mutex, broadcast},
+  sync::{Mutex, RwLock, broadcast},
 };
 
 use door_server::{Button, Door, GarageDoor, StatefulDoor};
@@ -31,7 +32,17 @@ async fn main() {
   let mut door_bell = Button::new(board.main_door_bell);
   let mut garage_door_button = Button::new(board.garage_door_button);
 
-  let mut main_door = Door::new(board.main_door_open, board.main_door_contact);
+  let event_tx_clone = event_tx.clone();
+  let main_door = Door::new(board.main_door_open, board.main_door_contact, move |closed| {
+    let event_tx = event_tx_clone.clone();
+
+    async move {
+      log::info!("Main door callback: closed={closed}");
+      let _ = event_tx.send(Event::DoorContact(DoorId::Main, closed));
+    }
+  })
+  .await;
+  let main_door = Arc::new(RwLock::new(main_door));
 
   async fn set_on_change<OC, F>(mut door: impl StatefulDoor, mut on_change: OC)
   where
@@ -41,21 +52,8 @@ async fn main() {
     // Initialize at start.
     on_change(door.is_closed()).await;
 
-    door.on_change(move |closed| on_change(closed));
+    door.on_change(on_change);
   }
-
-  let event_tx_clone = event_tx.clone();
-  set_on_change(&mut main_door, move |closed| {
-    let event_tx = event_tx_clone.clone();
-
-    async move {
-      let _ = event_tx.send(Event::DoorContact(DoorId::Main, closed));
-    }
-  })
-  .await;
-
-  let main_door: Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>> =
-    Arc::new(tokio::sync::RwLock::new(Box::new(main_door)));
 
   let event_tx_clone = event_tx.clone();
   door_bell.on_change(move |pressed| {
@@ -68,9 +66,8 @@ async fn main() {
     }
   });
 
-  let mut cellar_door = Door::new(board.cellar_door_open, board.cellar_door_contact);
   let event_tx_clone = event_tx.clone();
-  set_on_change(&mut cellar_door, move |closed| {
+  let cellar_door = Door::new(board.cellar_door_open, board.cellar_door_contact, move |closed| {
     let event_tx = event_tx_clone.clone();
 
     async move {
@@ -78,8 +75,7 @@ async fn main() {
     }
   })
   .await;
-  let cellar_door: Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>> =
-    Arc::new(tokio::sync::RwLock::new(Box::new(cellar_door)));
+  let cellar_door = Arc::new(RwLock::new(cellar_door));
 
   let mut garage_door = GarageDoor::new(
     board.garage_door_2_open,
@@ -97,8 +93,7 @@ async fn main() {
     }
   })
   .await;
-  let garage_door: Arc<tokio::sync::RwLock<Box<dyn Any + Send + Sync>>> =
-    Arc::new(tokio::sync::RwLock::new(Box::new(garage_door)));
+  let garage_door = Arc::new(RwLock::new(garage_door));
 
   let event_tx_clone = event_tx.clone();
   let garage_door_clone = garage_door.clone();
@@ -120,7 +115,6 @@ async fn main() {
         led.2.set_high();
 
         let mut garage_door = garage_door.write().await;
-        let garage_door = garage_door.downcast_mut::<GarageDoor>().unwrap();
 
         if garage_door.is_open() {
           log::info!("Garage is open, closing.");
@@ -154,16 +148,12 @@ async fn main() {
           log::info!("Refresh door states.");
 
           let main_door = &mut *main_door.write().await;
-          let main_door = main_door.downcast_mut::<Door>().unwrap();
+          main_door.force_update().await;
 
           let cellar_door = &mut *cellar_door.write().await;
-          let cellar_door = cellar_door.downcast_mut::<Door>().unwrap();
+          cellar_door.force_update().await;
 
           let garage_door = &mut *garage_door.write().await;
-          let garage_door = garage_door.downcast_mut::<GarageDoor>().unwrap();
-
-          event_tx.send(Event::DoorContact(DoorId::Main, main_door.is_closed())).unwrap();
-          event_tx.send(Event::DoorContact(DoorId::Cellar, cellar_door.is_closed())).unwrap();
           event_tx.send(Event::DoorContact(DoorId::Garage, garage_door.is_closed())).unwrap();
 
           let garage_door_state = garage_door.state();
@@ -176,12 +166,10 @@ async fn main() {
         },
         Event::DoorCommand(DoorId::Main, DoorCommand::Unlock) => {
           let main_door = &mut *main_door.write().await;
-          let main_door = main_door.downcast_mut::<Door>().unwrap();
           main_door.open().await;
         },
         Event::DoorCommand(DoorId::Cellar, DoorCommand::Unlock) => {
           let cellar_door = &mut *cellar_door.write().await;
-          let cellar_door = cellar_door.downcast_mut::<Door>().unwrap();
           cellar_door.open().await;
         },
         Event::DoorCommand(DoorId::Garage, DoorCommand::Unlock) => {
@@ -191,7 +179,6 @@ async fn main() {
           log::info!("Garage door command received: {:?}", command);
 
           let garage_door = &mut *garage_door.write().await;
-          let garage_door = garage_door.downcast_mut::<GarageDoor>().unwrap();
 
           event_tx.send(Event::DoorContact(DoorId::Garage, garage_door.is_closed())).unwrap();
 
@@ -236,9 +223,53 @@ async fn main() {
           let value = serde_json::value::to_value(&packet).unwrap();
 
           match packet.finger_scanner_name() {
-            "HT" => {},
-            "KT" => {},
-            "GT" => {},
+            "HT" => {
+              if packet.action() == Action::Open {
+                let main_door = &mut *main_door.write().await;
+                main_door.handle_external_open().await;
+                event_tx.send(Event::Refresh).unwrap();
+              }
+            },
+            "KT" => {
+              if packet.action() == Action::Open {
+                let cellar_door = &mut *cellar_door.write().await;
+                cellar_door.handle_external_open().await;
+                event_tx.send(Event::Refresh).unwrap();
+              }
+            },
+            "GT" => {
+              if packet.action() == Action::Open {
+                let garage_door = &mut *garage_door.write().await;
+                garage_door.handle_external_open(Duration::from_secs(0)); // TODO: Delay.
+                event_tx.send(Event::Refresh).unwrap();
+              }
+            },
+            "****" => {
+              if packet.action() == Action::DigitalInput {
+                match packet.input().unwrap() {
+                  DigitalInput::Input1 => {
+                    let main_door = &mut *main_door.write().await;
+                    main_door.handle_external_open().await;
+                    event_tx.send(Event::Refresh).unwrap();
+                  },
+                  DigitalInput::Input2 => {
+                    let cellar_door = &mut *cellar_door.write().await;
+                    cellar_door.handle_external_open().await;
+                    event_tx.send(Event::Refresh).unwrap();
+                  },
+                  DigitalInput::Input3 => {
+                    let garage_door = &mut *garage_door.write().await;
+                    garage_door.handle_external_open(Duration::from_secs(0)); // TODO: Delay.
+                    event_tx.send(Event::Refresh).unwrap();
+                  },
+                  DigitalInput::Input4 => {
+                    let garage_door = &mut *garage_door.write().await;
+                    garage_door.handle_external_stop(Duration::from_secs(0)); // TODO: Delay.
+                    event_tx.send(Event::Refresh).unwrap();
+                  },
+                }
+              }
+            },
             finger_scanner_name => log::warn!("Unknown finger scanner: {finger_scanner_name}"),
           }
         },
