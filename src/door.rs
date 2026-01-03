@@ -48,10 +48,10 @@ where
     let last_open_trigger = if trigger_open.is_low() { Some(Instant::now()) } else { None };
 
     let callback = Arc::new(Mutex::new(callback));
-    let callback_clone = callback.clone();
+    let weak_callback = Arc::downgrade(&callback);
 
     let state = Arc::new(RwLock::new(DoorState { last_open_trigger, contact }));
-    let state_clone = Arc::downgrade(&state); // Avoid strongly self-referencing callback.
+    let weak_state = Arc::downgrade(&state); // Avoid strongly self-referencing callback.
 
     state
       .write()
@@ -61,11 +61,11 @@ where
         Trigger::Both,
         Some(Duration::from_millis(50)),
         on_change_async(move |closed| {
-          let state = state_clone.clone();
-          let callback = callback_clone.clone();
+          let weak_callback = weak_callback.clone();
+          let weak_state = weak_state.clone();
 
           async move {
-            if let Some(state) = state.upgrade() {
+            if let Some((callback, state)) = weak_callback.upgrade().zip(weak_state.upgrade()) {
               let callback = &mut *callback.lock().await;
               let state = &*state.read().await;
               callback(state.is_locked() && closed).await;

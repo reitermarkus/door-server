@@ -120,7 +120,6 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .unwrap();
                   },
                   Event::DoorContact(DoorId::Main, closed) => {
-                    log::info!("Main door: closed={closed}");
                     tx.send(ProtoMessage::BinarySensorStateResponse(BinarySensorStateResponse {
                       device_id: 0,
                       key: 1,
@@ -221,7 +220,7 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                   event_tx.send(Event::DoorCommand(DoorId::Cellar, DoorCommand::Unlock)).unwrap();
                 }
 
-                log::info!("Opening door {key}.");
+                log::debug!("Opening door {key}.");
               },
               _ => continue,
             }
@@ -235,6 +234,8 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
               event_tx.send(Event::GarageDoorCommand(GarageDoorCommand::Open)).unwrap();
             } else if position == 0.0 {
               event_tx.send(Event::GarageDoorCommand(GarageDoorCommand::Close)).unwrap();
+            } else {
+              log::warn!("Unsupported position: {position}");
             }
           },
           message => {
