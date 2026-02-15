@@ -169,7 +169,7 @@ pub fn entities() -> HashMap<u32, ProtoMessage> {
       key,
       object_id: "garage_door".into(),
       name: "Garage Door".into(),
-      device_class: "garage_door".into(),
+      device_class: "garage".into(),
       disabled_by_default: false,
       icon: "mdi:garage-variant".into(),
       entity_category: EntityCategory::None as i32,

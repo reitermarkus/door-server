@@ -19,7 +19,7 @@ impl Button {
 impl Button {
   pub fn on_change<C, F>(&mut self, callback: C)
   where
-    F: Future,
+    F: Future + Send,
     C: (FnMut(bool) -> F) + Send + 'static,
   {
     let callback = Arc::new(Mutex::new(callback));

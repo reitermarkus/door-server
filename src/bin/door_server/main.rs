@@ -129,15 +129,13 @@ async fn main() {
 
   let ekey_receiver = ekey_receiver::start(event_tx.clone());
 
-  let event_tx_clone = event_tx.clone();
   let event_rx_clone = event_rx.resubscribe();
   let event_handler = async move {
-    let event_tx = event_tx_clone;
     let mut event_rx = event_rx_clone;
     while let Ok(event) = event_rx.recv().await {
       match event {
         Event::Refresh => {
-          log::info!("Refresh door states.");
+          log::info!("Refreshing door states.");
 
           let main_door = &mut *main_door.write().await;
           main_door.force_update().await;
@@ -163,8 +161,6 @@ async fn main() {
           log::info!("Garage door command received: {:?}", command);
 
           let garage_door = &mut *garage_door.write().await;
-
-          event_tx.send(Event::DoorContact(DoorId::Garage, garage_door.is_closed().await)).unwrap();
 
           match command {
             GarageDoorCommand::Open => garage_door.open().await,

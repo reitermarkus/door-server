@@ -1,7 +1,7 @@
-use std::{future::Future, sync::Arc, thread};
+use std::{future::Future, sync::Arc};
 
 use rppal::gpio::{Event, Trigger};
-use tokio::{runtime::Runtime, sync::Mutex};
+use tokio::sync::Mutex;
 
 mod board;
 pub use board::Board;
@@ -19,20 +19,19 @@ pub mod led;
 
 pub fn on_change_async<C, F>(callback: C) -> impl FnMut(Event) + Send + 'static
 where
-  F: Future,
+  F: Future + Send,
   C: (FnMut(bool) -> F) + Send + 'static,
 {
   let callback = Arc::new(Mutex::new(callback));
 
+  let handle = tokio::runtime::Handle::current();
+
   move |event: Event| {
     let callback = callback.clone();
 
-    thread::spawn(move || {
-      let rt: Runtime = Runtime::new().unwrap();
-      rt.block_on(async move {
-        let closed = event.trigger == Trigger::FallingEdge;
-        callback.lock().await(closed).await;
-      })
+    handle.block_on(async move {
+      let closed = event.trigger == Trigger::FallingEdge;
+      callback.lock().await(closed).await;
     });
   }
 }
