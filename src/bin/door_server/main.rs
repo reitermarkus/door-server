@@ -129,7 +129,10 @@ async fn main() {
 
   let ekey_receiver = ekey_receiver::start(event_tx.clone());
 
+  let mut balcony_door_contact = false;
+
   let event_rx_clone = event_rx.resubscribe();
+  let event_tx_clone = event_tx.clone();
   let event_handler = async move {
     let mut event_rx = event_rx_clone;
     while let Ok(event) = event_rx.recv().await {
@@ -145,6 +148,8 @@ async fn main() {
 
           let garage_door = &mut *garage_door.write().await;
           garage_door.force_update().await;
+
+          let _ = event_tx_clone.send(Event::DoorContact(DoorId::Balcony, balcony_door_contact));
         },
         Event::DoorCommand(DoorId::Main, DoorCommand::Unlock) => {
           let main_door = &mut *main_door.write().await;
@@ -154,7 +159,7 @@ async fn main() {
           let cellar_door = &mut *cellar_door.write().await;
           cellar_door.open().await;
         },
-        Event::DoorCommand(DoorId::Garage, DoorCommand::Unlock) => {
+        Event::DoorCommand(DoorId::Garage | DoorId::Balcony, DoorCommand::Unlock) => {
           unreachable!();
         },
         Event::GarageDoorCommand(command) => {
@@ -179,6 +184,12 @@ async fn main() {
           let mut ring = ring.lock().await;
           ring.set_bottom_right(closed_to_color(closed));
           ring.render();
+        },
+        Event::DoorContact(DoorId::Balcony, closed) => {
+          let mut ring = ring.lock().await;
+          ring.set_bottom_left(closed_to_color(closed));
+          ring.render();
+          balcony_door_contact = closed;
         },
         Event::DoorContact(DoorId::Garage, closed) => {
           let mut ring = ring.lock().await;
