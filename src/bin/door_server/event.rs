@@ -11,6 +11,7 @@ pub enum DoorId {
   Main,
   Cellar,
   Garage,
+  Balcony,
 }
 
 #[derive(Debug, Clone, Copy)]

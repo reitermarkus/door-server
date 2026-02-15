@@ -1,5 +1,4 @@
 use rppal::gpio::{Bias, Gpio, InputPin, IoPin, Mode, OutputPin, Pin};
-use smart_leds::RGB8;
 
 use crate::led::RgbRing;
 
@@ -50,11 +49,7 @@ impl Board {
         gpio.get(3).unwrap().into_output_low(),
         gpio.get(4).unwrap().into_output_low(),
       ),
-      ring: {
-        let mut ring = RgbRing::new();
-        ring.set_bottom_left(RGB8 { r: 0x01, g: 0x01, b: 0x01 });
-        ring
-      },
+      ring: RgbRing::new(),
     }
   }
 }

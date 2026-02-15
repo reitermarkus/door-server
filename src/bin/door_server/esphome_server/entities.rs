@@ -4,7 +4,7 @@ use esphome_native_api::{
   parser::ProtoMessage,
   proto::version_2025_12_1::{
     EntityCategory, ListEntitiesBinarySensorResponse, ListEntitiesCoverResponse, ListEntitiesEventResponse,
-    ListEntitiesLockResponse,
+    ListEntitiesLockResponse, ListEntitiesSwitchResponse,
   },
 };
 
@@ -177,6 +177,22 @@ pub fn entities() -> HashMap<u32, ProtoMessage> {
       supports_position: true,
       supports_tilt: false,
       supports_stop: true,
+    }),
+  );
+  key += 1;
+
+  entity_map.insert(
+    key,
+    ProtoMessage::ListEntitiesSwitchResponse(ListEntitiesSwitchResponse {
+      device_id,
+      key,
+      object_id: "balcony_door".into(),
+      name: "Balcony Door".into(),
+      device_class: "door".into(),
+      disabled_by_default: false,
+      icon: "mdi:door".into(),
+      entity_category: EntityCategory::None as i32,
+      assumed_state: true,
     }),
   );
 

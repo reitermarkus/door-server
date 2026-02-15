@@ -8,6 +8,7 @@ use esphome_native_api::{
     BinarySensorStateResponse, CoverCommandRequest, CoverStateResponse, EventResponse, ListEntitiesDoneResponse,
     ListEntitiesRequest, LockCommand, LockCommandRequest, LockState, LockStateResponse,
     SubscribeHomeAssistantStatesRequest, SubscribeHomeassistantServicesRequest, SubscribeStatesRequest,
+    SwitchCommandRequest, SwitchStateResponse,
   },
 };
 use mac_address::get_mac_address;
@@ -203,11 +204,22 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .await
                     .unwrap();
                   },
-
+                  Event::DoorContact(DoorId::Balcony, closed) => {
+                    tx.send(ProtoMessage::SwitchStateResponse(SwitchStateResponse {
+                      device_id: 0,
+                      key: 10,
+                      state: closed,
+                    }))
+                    .await
+                    .unwrap();
+                  },
                   _ => (),
                 }
               }
             });
+          },
+          ProtoMessage::SwitchCommandRequest(SwitchCommandRequest { device_id: 0, key: 10, state: closed }) => {
+            event_tx.send(Event::DoorContact(DoorId::Balcony, closed)).unwrap();
           },
           ProtoMessage::LockCommandRequest(LockCommandRequest { device_id: 0, key, command, .. }) => {
             match LockCommand::try_from(command) {
