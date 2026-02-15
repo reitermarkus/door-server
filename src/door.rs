@@ -127,7 +127,6 @@ where
   }
 
   pub async fn is_closed(&self) -> bool {
-    let state = self.state.read().await;
-    state.is_closed()
+    self.state.read().await.is_closed()
   }
 }

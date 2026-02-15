@@ -131,14 +131,13 @@ pub struct GarageDoor<C> {
   trigger_open: IoPin,  // S2 - Button OPEN (normally open)
   trigger_stop: IoPin,  // S0 - Button STOP (normally closed)
   trigger_close: IoPin, // S4 - Button CLOSE (normally open)
-  state: Arc<RwLock<State>>,
-  callback: Arc<Mutex<C>>,
+  callback_and_state: Arc<RwLock<(C, State)>>,
 }
 
 impl<C, F> GarageDoor<C>
 where
   F: Future + Send,
-  C: (FnMut(GarageDoorState) -> F) + Send + 'static,
+  C: (FnMut(GarageDoorState) -> F) + Send + Sync + 'static,
 {
   pub async fn new(
     mut trigger_open: IoPin,
@@ -154,57 +153,56 @@ where
     trigger_close.set_high();
     trigger_close.set_bias(Bias::PullUp);
 
-    let callback = Arc::new(Mutex::new(callback));
-    let weak_callback = Arc::downgrade(&callback);
+    let callback_and_state = Arc::new(RwLock::new((
+      callback,
+      State { contact, last_open_trigger: None, last_stop_trigger: None, last_close_trigger: None },
+    )));
+    let weak_callback_and_state = Arc::downgrade(&callback_and_state);
 
-    let state = Arc::new(RwLock::new(State {
-      contact,
-      last_open_trigger: None,
-      last_stop_trigger: None,
-      last_close_trigger: None,
-    }));
-    let weak_state = Arc::downgrade(&state);
-
-    state
+    callback_and_state
       .write()
       .await
+      .1
       .contact
       .set_async_interrupt(
         Trigger::Both,
         Some(Duration::from_millis(50)),
         on_change_async(move |_closed| {
-          let weak_callback = weak_callback.clone();
-          let weak_state = weak_state.clone();
+          let weak_callback_and_state = weak_callback_and_state.clone();
 
           async move {
-            if let Some((callback, state)) = weak_callback.upgrade().zip(weak_state.upgrade()) {
-              let state = state.read().await.state();
-              callback.lock().await(state).await;
+            if let Some(callback_and_state) = weak_callback_and_state.upgrade() {
+              let (callback, state) = &mut *callback_and_state.write().await;
+              callback(state.state()).await;
             }
           }
         }),
       )
       .unwrap();
 
-    Self { trigger_open, trigger_stop, trigger_close, state, callback }
+    Self { trigger_open, trigger_stop, trigger_close, callback_and_state }
   }
 
   fn set_moving(&mut self, max_duration: Duration, target_state: GarageDoorState) {
+    log::trace!("GarageDoor::set_moving");
+
     let start_time = Instant::now();
     let max_duration = max_duration.mul_f32(1.1) + Duration::from_secs(1);
 
-    let weak_callback = Arc::downgrade(&self.callback);
-    let weak_state = Arc::downgrade(&self.state);
+    let weak_callback_and_state = Arc::downgrade(&self.callback_and_state);
 
     tokio::spawn(async move {
       while start_time.elapsed() <= max_duration {
         sleep(Duration::from_millis(100)).await;
 
-        if let Some((callback, state)) = weak_callback.upgrade().zip(weak_state.upgrade()) {
-          let state = state.read().await.state();
-          callback.lock().await(state).await;
+        if let Some(callback_and_state) = weak_callback_and_state.upgrade() {
+          let (callback, state) = &mut *callback_and_state.write().await;
+
+          let state = state.state();
+          callback(state).await;
 
           if state == target_state {
+            log::debug!("Reached target state.");
             return;
           }
         } else {
@@ -212,23 +210,26 @@ where
         }
       }
 
+      // FIXME: Stopping should cancel this task.
       log::error!("Garage door movement did not finish in time.");
     });
   }
 
   pub async fn open(&mut self) {
-    if !self.is_closed().await {
-      self.stop().await;
-    }
+    log::trace!("GarageDoor::open");
 
-    let state_clone = self.state.clone();
-    let state = &mut *state_clone.write().await;
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (callback, state) = &mut *callback_and_state_clone.write().await;
+
+    if !state.is_closed() {
+      self.stop_with_callback_and_state(callback, state).await;
+    }
 
     self.trigger_open.set_mode(Mode::Output);
     self.trigger_open.set_low();
     let now = Instant::now();
     state.last_open_trigger = Some(now);
-    self.callback.lock().await(state.state()).await;
+    callback(state.state());
     self.set_moving(State::OPEN_DURATION, GarageDoorState::Open);
     sleep_until(now + Duration::from_millis(250)).await;
     self.trigger_open.set_high();
@@ -238,52 +239,62 @@ where
   }
 
   pub async fn handle_external_open(&mut self, delay: Duration) {
-    let state_clone = self.state.clone();
-    let state = &mut *state_clone.write().await;
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (_callback, state) = &mut *callback_and_state_clone.write().await;
 
     state.last_open_trigger = Instant::now().checked_add(delay);
     self.set_moving(State::OPEN_DURATION, GarageDoorState::Open);
   }
 
   pub async fn stop(&mut self) {
-    let state_clone = self.state.clone();
-    let state = &mut *state_clone.write().await;
+    log::trace!("GarageDoor::stop");
+
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (callback, state) = &mut *callback_and_state_clone.write().await;
+
+    self.stop_with_callback_and_state(callback, state).await;
+  }
+
+  async fn stop_with_callback_and_state(&mut self, callback: &mut C, state: &mut State) {
+    log::trace!("GarageDoor::stop_with_callback_and_state");
 
     self.trigger_stop.set_mode(Mode::Output);
     self.trigger_stop.set_low();
     let now = Instant::now();
     state.last_stop_trigger = Some(now);
-    self.callback.lock().await(state.state()).await;
+    callback(state.state()).await;
     sleep_until(now + Duration::from_millis(250)).await;
     self.trigger_stop.set_high();
     sleep(Duration::from_millis(500)).await;
-    self.callback.lock().await(state.state()).await;
+    callback(state.state()).await;
 
     self.trigger_stop.set_mode(Mode::Input);
     self.trigger_stop.set_bias(Bias::PullUp);
   }
 
   pub async fn handle_external_stop(&mut self, delay: Duration) {
-    let state_clone = self.state.clone();
-    let state = &mut *state_clone.write().await;
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (callback, state) = &mut *callback_and_state_clone.write().await;
 
     state.last_stop_trigger = Instant::now().checked_add(delay);
-    self.callback.lock().await(state.state()).await;
+    callback(state.state()).await;
   }
 
   pub async fn close(&mut self) {
-    if !self.is_closed().await {
-      self.stop().await;
-    }
+    log::trace!("GarageDoor::close");
 
-    let state_clone = self.state.clone();
-    let state = &mut *state_clone.write().await;
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (callback, state) = &mut *callback_and_state_clone.write().await;
+
+    if !state.is_closed() {
+      self.stop_with_callback_and_state(callback, state).await;
+    }
 
     self.trigger_close.set_mode(Mode::Output);
     self.trigger_close.set_low();
     let now = Instant::now();
     state.last_close_trigger = Some(now);
-    self.callback.lock().await(state.state()).await;
+    callback(state.state()).await;
     self.set_moving(State::CLOSE_DURATION, GarageDoorState::Closed);
     sleep_until(now + Duration::from_millis(250)).await;
     self.trigger_close.set_high();
@@ -292,15 +303,19 @@ where
     self.trigger_close.set_bias(Bias::PullUp);
   }
 
-  pub async fn force_update(&mut self) {
-    self.callback.lock().await(self.state.read().await.state()).await;
-  }
+  pub async fn force_update(&self) {
+    log::trace!("GarageDoor::force_update");
 
-  pub async fn state(&self) -> GarageDoorState {
-    self.state.read().await.state()
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (callback, state) = &mut *callback_and_state_clone.write().await;
+
+    callback(state.state()).await;
   }
 
   pub async fn is_closed(&self) -> bool {
-    self.state.read().await.is_closed()
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (_callback, state) = &mut *callback_and_state_clone.write().await;
+
+    state.is_closed()
   }
 }
