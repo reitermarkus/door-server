@@ -4,6 +4,6 @@ name: CI
 
 jobs:
   ci:
-    uses: reitermarkus/.github/.github/workflows/cargo-build-publish.yml@main
+    uses: reitermarkus/.github/.github/workflows/cargo-build-publish.yml@b51c8a3fd74e83d51e8e254f374faa6845319a6a # main
     secrets:
       CRATESIO_TOKEN: ${{ secrets.CRATESIO_TOKEN }}
