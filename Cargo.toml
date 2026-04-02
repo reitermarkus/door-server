@@ -15,11 +15,11 @@ log = "0.4"
 rppal = { version = "0.22", features = ["embedded-hal"] }
 serde_json = "1"
 uuid = "1"
-ws2812-spi = { version = "0.5.0", features = ["std"] }
+ws2812-spi = { version = "0.5.1", features = ["std"] }
 smart-leds = "0.4.0"
 ekey = "0.6.0"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
-esphome-native-api = "2.0.3"
+esphome-native-api = "2.0.7"
 mac_address = "1.1.8"
 
 [[example]]

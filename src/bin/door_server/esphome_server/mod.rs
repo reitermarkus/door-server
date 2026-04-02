@@ -58,7 +58,6 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
         .api_version_major(1)
         .api_version_minor(42)
         .server_info("ESPHome Rust".into())
-        .esphome_version("2025.12.1".into()) // FIXME: Should be set by `esphome-native-api` automatically.
         .name("door_server".into())
         .friendly_name("Door Server".into())
         .mac(mac_address.to_string())
