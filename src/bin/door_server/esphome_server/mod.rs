@@ -4,7 +4,7 @@ use ekey::Action;
 use esphome_native_api::{
   esphomeapi::EspHomeApi,
   parser::ProtoMessage,
-  proto::version_2025_12_1::{
+  proto::{
     BinarySensorStateResponse, CoverCommandRequest, CoverStateResponse, EventResponse, ListEntitiesDoneResponse,
     ListEntitiesRequest, LockCommand, LockCommandRequest, LockState, LockStateResponse,
     SubscribeHomeAssistantStatesRequest, SubscribeHomeassistantServicesRequest, SubscribeStatesRequest,

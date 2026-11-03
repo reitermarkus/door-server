@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use esphome_native_api::proto::version_2025_12_1::CoverOperation;
+use esphome_native_api::proto::CoverOperation;
 use rppal::gpio::{Bias, InputPin, IoPin, Mode, Trigger};
 use tokio::{
   sync::RwLock,
