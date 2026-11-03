@@ -67,9 +67,12 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
         .model("Door Server".to_string())
         // .suggested_area("".to_string())
         .encryption_key(encryption_key.clone())
-        .build();
+        .build()
+        .unwrap();
 
-      let (tx, mut rx) = server.start(stream).await.expect("Failed to start server");
+      let connection = server.start(stream).await.expect("Failed to start server");
+      let mut rx = connection.receiver();
+      let tx = connection.sender();
 
       loop {
         let message = match rx.recv().await {
