@@ -54,7 +54,7 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
     tokio::task::spawn(async move {
       log::info!("Starting ESPHome API server to {peer_addr}.");
 
-      let mut server = EspHomeApi::builder()
+      let server = EspHomeApi::builder()
         .api_version_major(1)
         .api_version_minor(42)
         .server_info("ESPHome Rust".into())
