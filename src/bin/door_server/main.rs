@@ -13,7 +13,10 @@ mod ekey_receiver;
 mod esphome_server;
 mod event;
 
-use door_server::{Board, led::closed_to_color};
+use door_server::{
+  Board,
+  led::{GREEN, RED, WHITE, YELLOW, closed_to_color},
+};
 
 use crate::event::{ButtonId, DoorCommand, DoorId, Event, GarageDoorCommand};
 
@@ -102,9 +105,7 @@ async fn main() {
       if pressed {
         log::info!("Garage door button pressed.");
 
-        led.0.set_high();
-        led.1.set_high();
-        led.2.set_high();
+        led.set_color(WHITE);
 
         let mut garage_door = garage_door.write().await;
 
@@ -120,9 +121,7 @@ async fn main() {
       } else {
         log::info!("Garage door button released.");
 
-        led.0.set_high();
-        led.1.set_high();
-        led.2.set_low();
+        led.set_color(YELLOW);
       }
     }
   });
@@ -197,15 +196,7 @@ async fn main() {
           ring.render();
 
           let mut led = led.lock().await;
-          if closed {
-            led.0.set_low();
-            led.1.set_high();
-            led.2.set_low();
-          } else {
-            led.0.set_high();
-            led.1.set_low();
-            led.2.set_low();
-          }
+          led.set_color(if closed { GREEN } else { RED });
         },
         Event::GarageDoorPosition(_) => {},
         Event::FingerScan(packet) => {

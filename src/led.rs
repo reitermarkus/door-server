@@ -1,6 +1,33 @@
+use embedded_hal::digital::OutputPin;
 use rppal::spi::{Bus, Mode as SpiMode, SlaveSelect, Spi};
 use smart_leds::{RGB8, SmartLedsWrite};
 use ws2812_spi::hosted::Ws2812;
+
+pub const RED: RGB8 = RGB8 { r: 0xff, g: 0x00, b: 0x00 };
+pub const GREEN: RGB8 = RGB8 { r: 0x00, g: 0xff, b: 0x00 };
+pub const YELLOW: RGB8 = RGB8 { r: 0xff, g: 0xff, b: 0x00 };
+pub const WHITE: RGB8 = RGB8 { r: 0xff, g: 0xff, b: 0xff };
+
+/// A single RGB LED controlled by three digital output pins.
+pub struct RgbLed<P: OutputPin> {
+  red: P,
+  green: P,
+  blue: P,
+}
+
+impl<P: OutputPin> RgbLed<P> {
+  /// Creates an `RgbLed` from the red, green, and blue output pins.
+  pub fn new(red: P, green: P, blue: P) -> Self {
+    Self { red, green, blue }
+  }
+
+  /// Sets the LED to color.
+  pub fn set_color(&mut self, color: RGB8) {
+    let _ = self.red.set_state((color.r != 0).into());
+    let _ = self.green.set_state((color.g != 0).into());
+    let _ = self.blue.set_state((color.b != 0).into());
+  }
+}
 
 pub struct RgbRing {
   inner: Ws2812<Spi>,

@@ -1,6 +1,6 @@
 use rppal::gpio::{Bias, Gpio, InputPin, IoPin, Mode, OutputPin, Pin};
 
-use crate::led::RgbRing;
+use crate::led::{RgbLed, RgbRing};
 
 pub struct Board {
   pub main_door_open: IoPin,
@@ -17,7 +17,7 @@ pub struct Board {
   pub garage_door_2_close: IoPin,
   pub garage_door_2_contact: InputPin,
   pub garage_door_button: InputPin,
-  pub led: (OutputPin, OutputPin, OutputPin),
+  pub led: RgbLed<OutputPin>,
   pub ring: RgbRing,
 }
 
@@ -44,7 +44,7 @@ impl Board {
       garage_door_2_close: into_input_pullup(gpio.get(16).unwrap()),
       garage_door_2_contact: gpio.get(25).unwrap().into_input_pullup(),
       garage_door_button: gpio.get(24).unwrap().into_input_pullup(),
-      led: (
+      led: RgbLed::new(
         gpio.get(23).unwrap().into_output_low(),
         gpio.get(3).unwrap().into_output_low(),
         gpio.get(4).unwrap().into_output_low(),
