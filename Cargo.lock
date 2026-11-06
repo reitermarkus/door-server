@@ -398,9 +398,8 @@ dependencies = [
 
 [[package]]
 name = "esphome-native-api"
-version = "3.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4251b5fa1b13310513b7165234061266f8c25ab1f6801e5a392d3b8372bdf7e8"
+version = "0.0.0"
+source = "git+https://github.com/reitermarkus/esphome-native-api?branch=update-api-version-dist#46b77faf32fbddfd2c941a4fccffff643410a1f8"
 dependencies = [
  "base64",
  "byteorder",

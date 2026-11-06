@@ -4,6 +4,7 @@ use esphome_native_api::proto::CoverOperation;
 use rppal::gpio::{Bias, InputPin, IoPin, Mode, Trigger};
 use tokio::{
   sync::RwLock,
+  task::AbortHandle,
   time::{Instant, sleep, sleep_until},
 };
 
@@ -124,6 +125,10 @@ impl State {
   pub fn is_closed(&self) -> bool {
     self.contact.is_low()
   }
+
+  pub fn is_open(&self) -> bool {
+    self.state() == GarageDoorState::Open
+  }
 }
 
 #[derive(Debug)]
@@ -132,6 +137,7 @@ pub struct GarageDoor<C> {
   trigger_stop: IoPin,  // S0 - Button STOP (normally closed)
   trigger_close: IoPin, // S4 - Button CLOSE (normally open)
   callback_and_state: Arc<RwLock<(C, State)>>,
+  moving_abort_handle: Option<AbortHandle>,
 }
 
 impl<C, F> GarageDoor<C>
@@ -180,7 +186,7 @@ where
       )
       .unwrap();
 
-    Self { trigger_open, trigger_stop, trigger_close, callback_and_state }
+    Self { trigger_open, trigger_stop, trigger_close, callback_and_state, moving_abort_handle: None }
   }
 
   fn set_moving(&mut self, max_duration: Duration, target_state: GarageDoorState) {
@@ -191,7 +197,11 @@ where
 
     let weak_callback_and_state = Arc::downgrade(&self.callback_and_state);
 
-    tokio::spawn(async move {
+    if let Some(moving_abort_handle) = self.moving_abort_handle.take() {
+      moving_abort_handle.abort();
+    }
+
+    let join_handle = tokio::spawn(async move {
       while start_time.elapsed() <= max_duration {
         sleep(Duration::from_millis(100)).await;
 
@@ -210,9 +220,9 @@ where
         }
       }
 
-      // FIXME: Stopping should cancel this task.
       log::error!("Garage door movement did not finish in time.");
     });
+    self.moving_abort_handle = Some(join_handle.abort_handle());
   }
 
   pub async fn open(&mut self) {
@@ -257,6 +267,10 @@ where
 
   async fn stop_with_callback_and_state(&mut self, callback: &mut C, state: &mut State) {
     log::trace!("GarageDoor::stop_with_callback_and_state");
+
+    if let Some(moving_abort_handle) = self.moving_abort_handle.take() {
+      moving_abort_handle.abort();
+    }
 
     self.trigger_stop.set_mode(Mode::Output);
     self.trigger_stop.set_low();
@@ -317,5 +331,19 @@ where
     let (_callback, state) = &mut *callback_and_state_clone.write().await;
 
     state.is_closed()
+  }
+
+  pub async fn is_open(&self) -> bool {
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (_callback, state) = &mut *callback_and_state_clone.write().await;
+
+    state.is_open()
+  }
+
+  pub async fn state(&self) -> GarageDoorState {
+    let callback_and_state_clone = self.callback_and_state.clone();
+    let (_callback, state) = &mut *callback_and_state_clone.write().await;
+
+    state.state()
   }
 }

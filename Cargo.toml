@@ -16,7 +16,7 @@ ws2812-spi = { version = "0.5.1", features = ["std"] }
 smart-leds = "0.4.0"
 ekey = "0.6.0"
 tokio = { version = "1", features = ["macros", "net", "rt-multi-thread"] }
-esphome-native-api = "3.0.0"
+esphome-native-api = { version = "0.0.0", git = "https://github.com/reitermarkus/esphome-native-api", branch = "update-api-version-dist" }
 mac_address = "1.1.8"
 
 [[example]]
@@ -30,3 +30,6 @@ path = "src/lib.rs"
 [[bin]]
 name = "door-server"
 path = "src/bin/door_server/main.rs"
+
+# [patch.crates-io]
+# esphome-native-api = { path = "../esphome-native-api" }
