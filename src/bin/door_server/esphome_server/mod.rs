@@ -1,14 +1,15 @@
 use std::{env, net::SocketAddr, sync::Arc};
 
+use door_server::ContactState;
 use ekey::Action;
 use esphome_native_api::{
   esphomeapi::EspHomeApi,
   parser::ProtoMessage,
   proto::{
-    BinarySensorStateResponse, CoverCommandRequest, CoverStateResponse, EventResponse, ListEntitiesDoneResponse,
-    ListEntitiesRequest, LockCommand, LockCommandRequest, LockState, LockStateResponse,
-    SubscribeHomeAssistantStatesRequest, SubscribeHomeassistantServicesRequest, SubscribeStatesRequest,
-    SwitchCommandRequest, SwitchStateResponse,
+    BinarySensorStateResponse, CoverCommandRequest, CoverStateResponse, DeviceCapabilitiesRequest,
+    DeviceCapabilitiesResponse, EventResponse, ListEntitiesDoneResponse, ListEntitiesRequest, LockCommand,
+    LockCommandRequest, LockState, LockStateResponse, SubscribeHomeAssistantStatesRequest,
+    SubscribeHomeassistantServicesRequest, SubscribeStatesRequest, SwitchCommandRequest, SwitchStateResponse,
   },
 };
 use mac_address::get_mac_address;
@@ -88,6 +89,18 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
         };
 
         match message {
+          ProtoMessage::DeviceCapabilitiesRequest(DeviceCapabilitiesRequest {}) => {
+            tx.send(ProtoMessage::DeviceCapabilitiesResponse(DeviceCapabilitiesResponse {
+              bluetooth_proxy: None,
+              voice_assistant: None,
+              zwave_proxy: None,
+              serial_proxies: Vec::new(),
+              wizard: None,
+              sendspin: None,
+            }))
+            .await
+            .unwrap();
+          },
           ProtoMessage::SubscribeHomeassistantServicesRequest(SubscribeHomeassistantServicesRequest {}) => {
             log::info!("SubscribeHomeassistantServicesRequest");
           },
@@ -122,11 +135,11 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .await
                     .unwrap();
                   },
-                  Event::DoorContact(DoorId::Main, closed) => {
+                  Event::DoorContact(DoorId::Main, state) => {
                     tx.send(ProtoMessage::BinarySensorStateResponse(BinarySensorStateResponse {
                       device_id: 0,
                       key: 1,
-                      state: !closed,
+                      state: matches!(state, ContactState::Open),
                       missing_state: false,
                     }))
                     .await
@@ -134,7 +147,10 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     tx.send(ProtoMessage::LockStateResponse(LockStateResponse {
                       device_id: 0,
                       key: 3,
-                      state: if closed { LockState::Locked } else { LockState::Unlocked } as i32,
+                      state: match state {
+                        ContactState::Closed => LockState::Locked,
+                        ContactState::Open => LockState::Unlocked,
+                      } as i32,
                     }))
                     .await
                     .unwrap();
@@ -148,11 +164,11 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .await
                     .unwrap()
                   },
-                  Event::DoorContact(DoorId::Cellar, closed) => {
+                  Event::DoorContact(DoorId::Cellar, state) => {
                     tx.send(ProtoMessage::BinarySensorStateResponse(BinarySensorStateResponse {
                       device_id: 0,
                       key: 4,
-                      state: !closed,
+                      state: matches!(state, ContactState::Open),
                       missing_state: false,
                     }))
                     .await
@@ -160,7 +176,10 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     tx.send(ProtoMessage::LockStateResponse(LockStateResponse {
                       device_id: 0,
                       key: 6,
-                      state: if closed { LockState::Locked } else { LockState::Unlocked } as i32,
+                      state: match state {
+                        ContactState::Closed => LockState::Locked,
+                        ContactState::Open => LockState::Unlocked,
+                      } as i32,
                     }))
                     .await
                     .unwrap();
@@ -174,11 +193,11 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .await
                     .unwrap()
                   },
-                  Event::DoorContact(DoorId::Garage, closed) => {
+                  Event::DoorContact(DoorId::Garage, state) => {
                     tx.send(ProtoMessage::BinarySensorStateResponse(BinarySensorStateResponse {
                       device_id: 0,
                       key: 7,
-                      state: !closed,
+                      state: matches!(state, ContactState::Open),
                       missing_state: false,
                     }))
                     .await
@@ -206,11 +225,12 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
                     .await
                     .unwrap();
                   },
-                  Event::DoorContact(DoorId::Balcony, closed) => {
+                  Event::DoorContact(DoorId::Balcony, state) => {
                     tx.send(ProtoMessage::SwitchStateResponse(SwitchStateResponse {
                       device_id: 0,
                       key: 10,
-                      state: closed,
+                      state: matches!(state, ContactState::Closed),
+                      missing_state: false,
                     }))
                     .await
                     .unwrap();
@@ -221,7 +241,9 @@ pub async fn start(event_tx: broadcast::Sender<Event>, event_rx: broadcast::Rece
             });
           },
           ProtoMessage::SwitchCommandRequest(SwitchCommandRequest { device_id: 0, key: 10, state: closed }) => {
-            event_tx.send(Event::DoorContact(DoorId::Balcony, closed)).unwrap();
+            event_tx
+              .send(Event::DoorContact(DoorId::Balcony, if closed { ContactState::Closed } else { ContactState::Open }))
+              .unwrap();
           },
           ProtoMessage::LockCommandRequest(LockCommandRequest { device_id: 0, key, command, .. }) => {
             match LockCommand::try_from(command) {

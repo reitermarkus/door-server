@@ -1,4 +1,4 @@
-use door_server::GarageDoorState;
+use door_server::{ContactState, GarageDoorState};
 
 #[derive(Debug, Clone, Copy)]
 pub enum ButtonId {
@@ -32,7 +32,7 @@ pub enum Event {
   DoorCommand(DoorId, DoorCommand),
   GarageDoorCommand(GarageDoorCommand),
   ButtonPress(ButtonId),
-  DoorContact(DoorId, bool),
+  DoorContact(DoorId, ContactState),
   GarageDoorPosition(GarageDoorState),
   FingerScan(ekey::multi::Multi),
 }
