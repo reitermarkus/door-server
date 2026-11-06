@@ -29,6 +29,16 @@ impl DoorState {
   pub fn is_closed(&self) -> bool {
     self.is_locked() && self.contact.is_low()
   }
+
+  pub fn state(&self) -> ContactState {
+    if self.is_closed() { ContactState::Closed } else { ContactState::Open }
+  }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ContactState {
+  Open,
+  Closed,
 }
 
 #[derive(Debug)]
@@ -41,7 +51,7 @@ pub struct Door<C> {
 impl<C, F> Door<C>
 where
   F: Future + Send,
-  C: (FnMut(bool) -> F) + Send + 'static,
+  C: (FnMut(ContactState) -> F) + Send + 'static,
 {
   pub async fn new(mut trigger_open: IoPin, contact: InputPin, callback: C) -> Self {
     trigger_open.set_high();
@@ -60,7 +70,7 @@ where
       .set_async_interrupt(
         Trigger::Both,
         Some(Duration::from_millis(50)),
-        on_change_async(move |closed| {
+        on_change_async(move |contact_state| {
           let weak_callback = weak_callback.clone();
           let weak_state = weak_state.clone();
 
@@ -68,7 +78,14 @@ where
             if let Some((callback, state)) = weak_callback.upgrade().zip(weak_state.upgrade()) {
               let callback = &mut *callback.lock().await;
               let state = &*state.read().await;
-              callback(state.is_locked() && closed).await;
+
+              let contact_state = if state.is_locked() {
+                contact_state
+              } else {
+                // If unlocked, treat the door as open regardless of contact state.
+                ContactState::Open
+              };
+              callback(contact_state).await;
             }
           }
         }),
@@ -95,7 +112,7 @@ where
   }
 
   pub async fn force_update(&mut self) {
-    self.callback.lock().await(self.is_closed().await).await;
+    self.callback.lock().await(self.state().await).await;
   }
 
   pub async fn set_opening(&mut self, time: Instant) {
@@ -105,7 +122,7 @@ where
     let last_open_trigger = time;
     state.last_open_trigger = Some(time);
 
-    self.callback.lock().await(state.is_closed()).await;
+    self.callback.lock().await(state.state()).await;
 
     let callback_clone = self.callback.clone();
 
@@ -116,9 +133,9 @@ where
       let state = &*state_clone.read().await;
       let callback = &mut *callback_clone.lock().await;
 
-      let closed = state.is_closed();
-      log::info!("Door::set_opening callback: closed={closed}");
-      callback(closed).await;
+      let state = state.state();
+      log::info!("Door::set_opening callback: state={state:?}");
+      callback(state).await;
     });
   }
 
@@ -128,5 +145,9 @@ where
 
   pub async fn is_closed(&self) -> bool {
     self.state.read().await.is_closed()
+  }
+
+  pub async fn state(&self) -> ContactState {
+    self.state.read().await.state()
   }
 }
