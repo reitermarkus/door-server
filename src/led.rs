@@ -3,10 +3,7 @@ use rppal::spi::{Bus, Mode as SpiMode, SlaveSelect, Spi};
 use smart_leds::{RGB8, SmartLedsWrite};
 use ws2812_spi::hosted::Ws2812;
 
-pub const RED: RGB8 = RGB8 { r: 0xff, g: 0x00, b: 0x00 };
-pub const GREEN: RGB8 = RGB8 { r: 0x00, g: 0xff, b: 0x00 };
-pub const YELLOW: RGB8 = RGB8 { r: 0xff, g: 0xff, b: 0x00 };
-pub const WHITE: RGB8 = RGB8 { r: 0xff, g: 0xff, b: 0xff };
+use crate::ContactState;
 
 /// A single RGB LED controlled by three digital output pins.
 pub struct RgbLed<P: OutputPin> {
@@ -67,6 +64,9 @@ impl RgbRing {
   }
 }
 
-pub fn closed_to_color(closed: bool) -> RGB8 {
-  if closed { RGB8 { r: 0x00, g: 0x0f, b: 0x01 } } else { RGB8 { r: 0x14, g: 0x00, b: 0x00 } }
+pub fn state_to_color(state: ContactState) -> RGB8 {
+  match state {
+    ContactState::Open => RGB8 { r: 0x14, g: 0x00, b: 0x00 },
+    ContactState::Closed => RGB8 { r: 0x00, g: 0x0f, b: 0x01 },
+  }
 }
