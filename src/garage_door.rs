@@ -141,11 +141,11 @@ impl IoTrigger {
 
   pub fn new(pin: IoPin) -> Self {
     let mut trigger = Self { pin };
-    trigger.to_input();
+    trigger.set_to_input();
     trigger
   }
 
-  fn to_input(&mut self) {
+  fn set_to_input(&mut self) {
     self.pin.set_mode(Mode::Input);
     self.pin.set_bias(Bias::PullUp);
   }
@@ -157,7 +157,7 @@ impl IoTrigger {
     sleep_until(now + Self::TRIGGER_DURATION).await;
     self.pin.set_high();
 
-    self.to_input();
+    self.set_to_input();
 
     now
   }
