@@ -132,10 +132,42 @@ impl State {
 }
 
 #[derive(Debug)]
+struct IoTrigger {
+  pin: IoPin,
+}
+
+impl IoTrigger {
+  const TRIGGER_DURATION: Duration = Duration::from_millis(250);
+
+  pub fn new(pin: IoPin) -> Self {
+    let mut trigger = Self { pin };
+    trigger.to_input();
+    trigger
+  }
+
+  fn to_input(&mut self) {
+    self.pin.set_mode(Mode::Input);
+    self.pin.set_bias(Bias::PullUp);
+  }
+
+  pub async fn trigger(&mut self) -> Instant {
+    self.pin.set_mode(Mode::Output);
+    self.pin.set_low();
+    let now = Instant::now();
+    sleep_until(now + Self::TRIGGER_DURATION).await;
+    self.pin.set_high();
+
+    self.to_input();
+
+    now
+  }
+}
+
+#[derive(Debug)]
 pub struct GarageDoor<C> {
-  trigger_open: IoPin,  // S2 - Button OPEN (normally open)
-  trigger_stop: IoPin,  // S0 - Button STOP (normally closed)
-  trigger_close: IoPin, // S4 - Button CLOSE (normally open)
+  trigger_open: IoTrigger,  // S2 - Button OPEN (normally open)
+  trigger_stop: IoTrigger,  // S0 - Button STOP (normally closed)
+  trigger_close: IoTrigger, // S4 - Button CLOSE (normally open)
   callback_and_state: Arc<RwLock<(C, State)>>,
   moving_abort_handle: Option<AbortHandle>,
 }
@@ -146,18 +178,15 @@ where
   C: (FnMut(GarageDoorState) -> F) + Send + Sync + 'static,
 {
   pub async fn new(
-    mut trigger_open: IoPin,
-    mut trigger_stop: IoPin,
-    mut trigger_close: IoPin,
+    trigger_open: IoPin,
+    trigger_stop: IoPin,
+    trigger_close: IoPin,
     contact: InputPin,
     callback: C,
   ) -> Self {
-    trigger_open.set_high();
-    trigger_open.set_bias(Bias::PullUp);
-    trigger_stop.set_high();
-    trigger_stop.set_bias(Bias::PullUp);
-    trigger_close.set_high();
-    trigger_close.set_bias(Bias::PullUp);
+    let trigger_open = IoTrigger::new(trigger_open);
+    let trigger_stop = IoTrigger::new(trigger_stop);
+    let trigger_close = IoTrigger::new(trigger_close);
 
     let callback_and_state = Arc::new(RwLock::new((
       callback,
@@ -235,17 +264,9 @@ where
       self.stop_with_callback_and_state(callback, state).await;
     }
 
-    self.trigger_open.set_mode(Mode::Output);
-    self.trigger_open.set_low();
-    let now = Instant::now();
-    state.last_open_trigger = Some(now);
+    state.last_open_trigger = Some(self.trigger_open.trigger().await);
     callback(state.state());
     self.set_moving(State::OPEN_DURATION, GarageDoorState::Open);
-    sleep_until(now + Duration::from_millis(250)).await;
-    self.trigger_open.set_high();
-
-    self.trigger_open.set_mode(Mode::Input);
-    self.trigger_open.set_bias(Bias::PullUp);
   }
 
   pub async fn handle_external_open(&mut self, delay: Duration) {
@@ -272,18 +293,10 @@ where
       moving_abort_handle.abort();
     }
 
-    self.trigger_stop.set_mode(Mode::Output);
-    self.trigger_stop.set_low();
-    let now = Instant::now();
-    state.last_stop_trigger = Some(now);
+    state.last_stop_trigger = Some(self.trigger_stop.trigger().await);
     callback(state.state()).await;
-    sleep_until(now + Duration::from_millis(250)).await;
-    self.trigger_stop.set_high();
     sleep(Duration::from_millis(500)).await;
     callback(state.state()).await;
-
-    self.trigger_stop.set_mode(Mode::Input);
-    self.trigger_stop.set_bias(Bias::PullUp);
   }
 
   pub async fn handle_external_stop(&mut self, delay: Duration) {
@@ -304,17 +317,9 @@ where
       self.stop_with_callback_and_state(callback, state).await;
     }
 
-    self.trigger_close.set_mode(Mode::Output);
-    self.trigger_close.set_low();
-    let now = Instant::now();
-    state.last_close_trigger = Some(now);
+    state.last_close_trigger = Some(self.trigger_close.trigger().await);
     callback(state.state()).await;
     self.set_moving(State::CLOSE_DURATION, GarageDoorState::Closed);
-    sleep_until(now + Duration::from_millis(250)).await;
-    self.trigger_close.set_high();
-
-    self.trigger_close.set_mode(Mode::Input);
-    self.trigger_close.set_bias(Bias::PullUp);
   }
 
   pub async fn force_update(&self) {
